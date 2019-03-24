@@ -13,4 +13,9 @@ public class Layout3D {
         object.setUID(UIDs);
         UIDs++;
     }
+    
+    public Object3D getObject(int index) {
+
+        return objects.get(index);
+    }
 }

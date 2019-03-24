@@ -10,6 +10,10 @@ public abstract class Object3D {
         this.position = position;
     }
 
+    public void move(Vector amount) {
+        position = VMathUtils.add(position, amount);
+    }
+    
     public void setName(String name) {
         this.name = name;
     }

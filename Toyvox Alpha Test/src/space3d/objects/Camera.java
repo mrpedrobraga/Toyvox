@@ -1,5 +1,6 @@
 package space3d.objects;
 
+import engineTester.Sphere;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import static space3d.VMathUtils.*;
@@ -7,6 +8,7 @@ import java.awt.Image;
 import java.awt.image.BufferedImage;
 import space3d.Layout3D;
 import space3d.Object3D;
+import space3d.VMathUtils;
 import space3d.Vector;
 
 public class Camera extends Object3D {
@@ -16,7 +18,7 @@ public class Camera extends Object3D {
     }
 
     public void sethROT(double hROT) {
-        this.hROT = hROT;
+        this.hROT = angleBind(hROT);
     }
 
     public double getvROT() {
@@ -24,7 +26,7 @@ public class Camera extends Object3D {
     }
 
     public void setvROT(double vROT) {
-        this.vROT = vROT;
+        this.vROT = angleBind(vROT);
     }
 
     public double gethFOV() {
@@ -32,7 +34,7 @@ public class Camera extends Object3D {
     }
 
     public void sethFOV(double hFOV) {
-        this.hFOV = hFOV;
+        this.hFOV = angleBind(hFOV);
     }
 
     public double getvFOV() {
@@ -40,7 +42,7 @@ public class Camera extends Object3D {
     }
 
     public void setvFOV(double vFOV) {
-        this.vFOV = vFOV;
+        this.vFOV = angleBind(vFOV);
     }
 
     /**
@@ -55,31 +57,55 @@ public class Camera extends Object3D {
 
         BufferedImage output = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = (Graphics2D) output.getGraphics();
-        
+
         double rayAngleH, rayAngleV, x, y, a, b, px, py;
 
-        //Does the raytracing stuff
+        //For every pixel in the screen, shoot a ray and check if it intersects with something.
+        //In this case, we'll check if it intersects with the 2nd object of the Layout,
+        //that's supposed to be a Sphere.
         for (int ky = 0; ky < height; ky++) {
             for (int kx = 0; kx < width; kx++) {
+
+                rayAngleH = angleLerp(hROT - hFOV / 2, hROT + hFOV / 2, getP(0, kx, width));
+                rayAngleV = angleLerp(vROT - vFOV / 2, vROT + vFOV / 2, getP(0, ky, height));
+
+                Sphere sphere = (Sphere) layout.getObject(0);
                 
-                rayAngleH = angleLerp(gethROT() - gethFOV()/2, gethROT() + gethFOV()/2, getP(0, kx, width));
-                rayAngleV = angleLerp(getvROT() - getvFOV()/2, getvROT() + getvFOV()/2, getP(0, ky, height));
+                Vector sphereCenter = sphere.getPosition();
+                Vector ray = add(normalize(getRectVector(10, rayAngleH, rayAngleV)), getPosition());
                 
-                a = atan(rayAngleH);
-                g.setColor(new Color((int) Math.floor(lerp(0, 255, (double)(kx)/width)), (int) Math.floor(lerp(0, 255, (double)(ky)/height)), 255));
+                double dotproduct = dotProduct(sphereCenter, ray);
+                //System.out.println(ray.toString() + " . " + sphere.getPosition().toString() + " = " + dotproduct);
                 
-                if(ky > 50 && ky < 250 && kx > 50 && kx < 250) g.drawLine(kx,ky,kx,ky);
+                Vector closestPoint = multiply(ray, dotproduct);
+                
+                double distance = distance(closestPoint, sphereCenter);
+                //System.out.println(ray.toString() + " " + closestPoint.toString());
+                
+                //May cause problems later
+                if(distance <= (sphere.getRadius()) && dotproduct >= 0) {
+                    
+                    g.setColor(sphere.getColor());
+                } else {
+                    
+                    g.setColor(new Color(100, 100, 100));
+                }
+                
+                //Sets the pixel to the chosen color
+                g.drawLine(kx, ky, kx, ky);
             }
         }
-        
+
         return output;
     }
-    
-    public Camera(Vector position, double hROT, double vROT, double hFOV, double vFOV){
-        
-        this.hROT = hROT; this.vROT = vROT;
-        this.hFOV = hFOV; this.vFOV = vFOV;
-        
+
+    public Camera(Vector position, double hROT, double vROT, double hFOV, double vFOV) {
+
+        this.hROT = angleBind(hROT);
+        this.vROT = angleBind(vROT);
+        this.hFOV = angleBind(hFOV);
+        this.vFOV = angleBind(vFOV);
+
         setPosition(position);
     }
 }

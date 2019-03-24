@@ -28,8 +28,9 @@ public class Sphere extends TransformableObject {
     //The color of the sphere
     private Color color;
 
-    public Sphere(double r, Vector position) {
+    public Sphere(double r, Vector position, Color color) {
         radius = r;
+        this.color = color;
         setPosition(position);
     }
 }
