@@ -3,6 +3,10 @@
 Hello! So you want to create a game, and you're looking for the engine
 that best suits it!
 
+<aside class="notice">
+Toyvox is a project still under early developement. So it can still change a lot.
+</aside>
+
 Well, Toyvox Engine is a very unique type of voxel engine, because it's very
 similar to 2d (pixel) engines, on it's design. The models of the objects
 are expressed in animations that contain frames. Those frames are voxel sprites.
