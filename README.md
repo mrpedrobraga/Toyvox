@@ -22,23 +22,23 @@ so you can have an idea of what you're getting into.
 
 ## Objects and Object Types
 
-Object Types are the classes, and Objects are their instances.
-That's how them are going to be referenced from now on. 
-So when you see "Object Type" we're talking about all the objects
-of the same TYPE. When you see "Object", we are talking about an instance 
+_Object Types_ are the classes, and _Objects_ are their instances.
+That's how they are going to be referenced from now on. 
+So when you see "_Object Type_" we're talking about all the objects
+of the same TYPE. When you see "_Object_", we are talking about an instance 
 of said type.
 
 ## Layout and Hierarchy
 
 There's not much hierarchy on Toyvox, apart from the organization of the world.
-Your World may have many layouts, that are instances of Layout3D.
-Layouts have Objects that are sorted by layer and WOrder.
-Their position on the layout doesn't matter, just their UNIQUE IDs,
+Your World may have many layouts, that are instances of `Layout3D`.
+_Layouts_ have Objects that are sorted by layer and _WOrder_.
+Their position on the layout doesn't matter, just their **UNIQUE IDs** (UIDs),
 that are assigned when they're created.
 
-There is the possibility to create Object Types. They're an extension of the default
-Object Type, but they can have unique instance variables.
-Instance variables are shared by Object Types, but they hold an unique value for
+There is the possibility to create Object Types. They're an _extension_ of the default
+`Object3D` Class, but they can have unique _instance variables_.
+_Instance variables_ are shared by Object Types, but they hold an unique value for
 each instance of the type. That's useful for creating Health, Ammo, etc.
 
 Objects can be removed from one Layout and added to another, keeping it's properties,
@@ -59,12 +59,12 @@ and if that condition is in trigger mode, if it was true last tick.
 
 For example:
 
-A Is overlapping B -> print("Overlapping")
+`A Is overlapping B -> print("Overlapping")`
 
-will spam "Overlapping" on the exit, when object type A is overlapping object type B.
+will spam `Overlapping` on the exit, when object type A is overlapping object type B.
 By changing that event to Trigger mode, you get something like.
 
-When A collides with B -> print("Overlapping")
+`When A collides with B -> print("Overlapping")`
 
 This event will only trigger it's actions when it's condition is true,
 but will only run once.
