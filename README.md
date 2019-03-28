@@ -14,8 +14,14 @@ By default, there's no lighting on Toyvox so the models may look flat at first, 
 that just means you have can more freedom with your own shading. (I mean, of course the
 model will look flat with just one voxel color!)
 
+The idea is to highlight the shape of the model, not the voxels themselves.
+So you might as well end up not seeing the voxels individually, but it's okay if you
+can perceive depth on the model. Or not, if you want to create something purely white
+or black, or a green screen.
+
 However, you'll be able to add lighting easily. Just add a lamp and set up the perfect
-mood for your game!
+mood for your game! Then, you can add flat-colored models because the shading is being
+done by the lights. Ambient occlusion you make it easy to see the shape of something.
 
 On the next section, we're going to explain how the engine works on its core
 so you can have an idea of what you're getting into.
