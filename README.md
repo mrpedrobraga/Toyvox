@@ -20,7 +20,7 @@ mood for your game!
 On the next section, we're going to explain how the engine works on its core
 so you can have an idea of what you're getting into.
 
-#Objects and Object Types
+## Objects and Object Types
 
 Object Types are the classes, and Objects are their instances.
 That's how them are going to be referenced from now on. 
@@ -28,7 +28,7 @@ So when you see "Object Type" we're talking about all the objects
 of the same TYPE. When you see "Object", we are talking about an instance 
 of said type.
 
-#Layout and Hierarchy
+## Layout and Hierarchy
 
 There's not much hierarchy on Toyvox, apart from the organization of the world.
 Your World may have many layouts, that are instances of Layout3D.
@@ -46,12 +46,12 @@ but this time, relative to the other layout.
 For example, if you remove a monster with position (4, 3, 5) it will enter the other
 layout with the same position. So make sure to explicitly change it if you want.
 
-#Parenting
+### Parenting
 
 Objects can also be placed into object groups, that can be moved by themselves.
 Their position now it relative to the group.
 
-#Eventing System
+## Eventing System
 
 Toyvox will have a structure of events that have actions that are called when their
 conditions are true. For each reachable event, it tests: if its condition is true,
@@ -79,7 +79,7 @@ Some conditions like "is A overlapping B" are needed in many games, so we'll mak
 To setup an event, you can create functions and set the event's condition and actions to pointers to them
 (You will probably make a file just for a certain type of events -- an eventing sheet!)
 
-#Eventing Groups
+### Eventing Groups
 
 Toyvox will allow to create Eventing Groups, so you can stack objects that are similar.
 Any events that references an Eventing Group, references all of it's children object types.
