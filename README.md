@@ -21,7 +21,7 @@ Also, there are other smaller artists that use the flat-shading, because there i
 
 * You can easily make whatever shape you want. With flat-shading, voxelart gets closer to the pixelart side, than to the 3d - that's the objective of this engine. You can highlight the shape, and use the colors at your favour. Instead of shading, you can also make lighting, and make objects like fire and particles look great. Those voxel models look a lot more like 3d pixelart.
 
-![For example, this escape pod by y2bcrazy at imgur](/imgReferences/dropPod.gif)
+![For example, this escape pod by y2bcrazy at imgur](https://i.imgur.com/HYzIikB.gif)
 
 Also, you can animate it however you want! For example, you can animate it like pixelart (having various frames that the animation renders trough), or even have small models connected together trough *model points*. Both types of animation can be done with this engine.
 
@@ -39,7 +39,7 @@ But although they are prototypes, they express what the engine will look like, v
 Also, the actual engine is going to be orders of magnitude more powerful than it's prototypes!
 
 #### This one was rendered by @Yoris1
-![Dope](https://gyazo.com/3ea8935b2ef6e16d311590cfa225285e)
+![Dope](https://images-ext-2.discordapp.net/external/UzECJlnopVVQyNDfFJciuRR5LYJbLhw62-znjm0-B5E/https/i.gyazo.com/c978c783c789ec2cff5145f6ec5de001.mp4)
 
 #### This is my version of it
 ![Every voxel is transferred to a pixel, actually!](https://i.gyazo.com/6dc483c0f3dd406b2d59136daceea31c.gif)
