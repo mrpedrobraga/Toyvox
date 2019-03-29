@@ -1,4 +1,4 @@
-# Toyvox
+# ![](/enginelogo.png) Toyvox
 
 Toyvox is very unique, because it actually goes against the predominant way of making 3d games, that we are all used to.
 
