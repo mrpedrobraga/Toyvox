@@ -15,7 +15,7 @@ There are, however, some examples I can point to.
 
 Like the game Voxelnauts - and the amazing arts made by [Zach Soares](https://www.zsinked.com/) for that game.
 
-![I mean, just look at this!](https://i.pinimg.com/originals/47/04/97/470497843635a32fb5ecb9bd068a5310.gif|height=200)
+![I mean, just look at this!](https://i.pinimg.com/originals/47/04/97/470497843635a32fb5ecb9bd068a5310.gif|width=50)
 
 Also, there are other smaller artists that use the flat-shading, because there is a list of benefits you get by doing it:
 
