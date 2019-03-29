@@ -1,0 +1,2 @@
+﻿  tester.cpp
+c:\users\pedro\documents\toyvox engine\toybox\toyvox engine\objects.h(3): fatal error C1083: Não é possível abrir arquivo incluir: 'glm/glm.hpp': No such file or directory
