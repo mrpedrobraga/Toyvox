@@ -39,7 +39,7 @@ But although they are prototypes, they express what the engine will look like, v
 Also, the actual engine is going to be orders of magnitude more powerful than it's prototypes!
 
 #### This one was rendered by @Yoris1
-![Dope](https://images-ext-2.discordapp.net/external/UzECJlnopVVQyNDfFJciuRR5LYJbLhw62-znjm0-B5E/https/i.gyazo.com/c978c783c789ec2cff5145f6ec5de001.mp4)
+![Dope](https://i.gyazo.com/fd778387e6c269da87fe87d4aebcfff6.gif)
 
 #### This is my version of it
 ![Every voxel is transferred to a pixel, actually!](https://i.gyazo.com/6dc483c0f3dd406b2d59136daceea31c.gif)
