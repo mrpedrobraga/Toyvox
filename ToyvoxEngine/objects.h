@@ -55,9 +55,9 @@ public:
 		this->isVisible = true;
 	}
 
-	Object(const char objectTypeTag[], vec3 position)
+	Object(const char *objectTypeTag, vec3 position)
 	{
-		this->objectTypeTag = _strdup(objectTypeTag);
+		this->objectTypeTag = strdup(objectTypeTag);
 		this->position = position;
 	}
 };
@@ -98,9 +98,9 @@ public:
 
 	}
 
-	Scene(const char name[])
+	Scene(const char *name)
 	{
-		this->name = _strdup(name);
+		this->name = strdup(name);
 	}
 
 	~Scene()
