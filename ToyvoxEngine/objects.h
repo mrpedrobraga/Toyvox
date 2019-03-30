@@ -1,13 +1,23 @@
+
 #pragma once
-#include <math.h>
-#include <glm/glm.hpp>
-#include <string.h>
-#include <vector>
+
 #include <stdio.h>
+#include <math.h>
+#include <vector>
+#include <string.h>
+
+#define GLM_FORCE_RADIANS 1
+#include <glm/glm.hpp>
+
 #include "events.h"
 
-using namespace glm;
-using namespace std;
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+# define STRDUP _strdup
+#else
+# define STRDUP strdup
+#endif
+
+namespace tvx {
 
 class VoxelModel
 {
@@ -19,32 +29,32 @@ typedef VoxelModel VoxelAnimFrame;
 
 class Object {
 protected:
-	vec3 position;
-	vec3 scale;
-	vec3 rotation;
-	//TODO use "mat4x4 LocRotScale;" instead of all those vec3(s).
+	glm::vec3 position;
+	glm::vec3 scale;
+	glm::vec3 rotation;
+	//TODO use "mat4x4 LocRotScale;" instead of all those glm::vec3(s).
 
 	bool isVisible;
 	char *objectTypeTag;
 public:
 	//Getters, setters and adders.
-	vec3 getPosition() { return position; }
+	glm::vec3 getPosition() { return position; }
 
-	void setPosition(vec3 position) { this->position = position; }
+	void setPosition(glm::vec3 position) { this->position = position; }
 
-	void move(vec3 amount) { this->position += amount; }
+	void move(glm::vec3 amount) { this->position += amount; }
 
-	vec3 getScale() { return scale; }
+	glm::vec3 getScale() { return scale; }
 
-	void setScale(vec3 scale) { this->scale = scale; }
+	void setScale(glm::vec3 scale) { this->scale = scale; }
 
-	void addScale(vec3 scale) { this->scale += scale; }
+	void addScale(glm::vec3 scale) { this->scale += scale; }
 
-	vec3 getRotation() { return rotation; }
+	glm::vec3 getRotation() { return rotation; }
 
-	void setRotation(vec3 rotation) { this->rotation = rotation; }
+	void setRotation(glm::vec3 rotation) { this->rotation = rotation; }
 
-	void rotate(vec3 amount) { this->rotation += amount; }
+	void rotate(glm::vec3 amount) { this->rotation += amount; }
 
 	char* getObjectTypeTag() { return this->objectTypeTag; }
 
@@ -55,9 +65,9 @@ public:
 		this->isVisible = true;
 	}
 
-	Object(const char *objectTypeTag, vec3 position)
+	Object(const char *objectTypeTag, glm::vec3 position)
 	{
-		this->objectTypeTag = strdup(objectTypeTag);
+		this->objectTypeTag = STRDUP(objectTypeTag);
 		this->position = position;
 	}
 };
@@ -100,7 +110,7 @@ public:
 
 	Scene(const char *name)
 	{
-		this->name = strdup(name);
+		this->name = STRDUP(name);
 	}
 
 	~Scene()
@@ -111,3 +121,4 @@ public:
 	//TODO Contructor for: "Scene(char name, Camera camera);"
 };
 
+}

@@ -19,7 +19,7 @@ set( TARGET_PREFIX ${PROJECT_NAME}_ )
 include( extern/cmake/helpers.cmake )
 
 # Build and assemble third-party dependencies
-add_subdirectory( "./extern" )
+add_subdirectory( extern )
 
 # Build this project's targets
-add_subdirectory( "./ToyvoxEngine" )
+add_subdirectory( ToyvoxEngine )

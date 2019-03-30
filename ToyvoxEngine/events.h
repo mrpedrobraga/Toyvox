@@ -1,7 +1,10 @@
+
 #pragma once
 
-#include <string.h>
 #include <vector>
+#include <string.h>
+
+namespace tvx {
 
 struct Event {
 public:
@@ -27,7 +30,7 @@ public:
 	//They will be defined by the user, and will have a custom body!
 
 	virtual bool testCondition();
-	
+
 	virtual void execAction();
 };
 
@@ -44,3 +47,5 @@ public:
 };
 
 typedef EventHandler EventSheet;
+
+}
