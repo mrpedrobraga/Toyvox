@@ -10,7 +10,7 @@ add_executable( ${TARGET_NAME}objects
   tvxcore.h
   )
 target_link_libraries( ${TARGET_NAME}objects
-  ${TARGET_PREFIX}external
+  ${TARGET_PREFIX}extern_all
   )
 
 add_executable( ${TARGET_NAME}sdl2
@@ -19,7 +19,7 @@ add_executable( ${TARGET_NAME}sdl2
   sdlTest.cpp
   )
 target_link_libraries( ${TARGET_NAME}sdl2
-  ${TARGET_PREFIX}external
+  ${TARGET_PREFIX}extern_all
   )
 
 if ( WIN32 )
