@@ -5,8 +5,7 @@
 using namespace glm;
 using namespace tvx;
 
-int main()
-{
+int main() {
 	Scene scene;
 	Object obj1;
 

@@ -17,8 +17,10 @@ namespace tvx {
       void setFullscreenMode(SDL_WindowFlags mode);
       bool pollEvents();
       void pollStates();
+      void setClearColor(float r, float g, float b);
       void clearColor();
       void swapWindow();
+      float getDeltaTime();
     private:
       SDL_Window *window = nullptr;
       uint32_t windowFlags = SDL_WINDOW_OPENGL;

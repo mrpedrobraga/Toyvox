@@ -69,7 +69,7 @@ SdlContext::SdlContext(const char *applicationName) {
       SDL_WINDOWPOS_UNDEFINED, // x (SDL_WINDOWPOS_UNDEFINED means "doesn't matter")
       SDL_WINDOWPOS_UNDEFINED, // y (SDL_WINDOWPOS_UNDEFINED means "doesn't matter")
       1024,                    // width
-      768,                     // height
+      576,                     // height
       windowFlags              // flags
   );
   if ( ! window) {
@@ -102,10 +102,13 @@ SdlContext::SdlContext(const char *applicationName) {
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
 
-  // Get whatever window size ended up being and setup viewport and clear color
+  // Get whatever window size ended up being and setup viewport
   SDL_GetWindowSize(window, &windowWidth, &windowHeight);
   glViewport(0, 0, windowWidth, windowHeight);
-  glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
+
+  // Initialize the timer
+  lastTime = SDL_GetPerformanceCounter();
+  toSeconds = 1.0 / (double)SDL_GetPerformanceFrequency();
 }
 
 SdlContext::~SdlContext() {
@@ -244,12 +247,36 @@ void SdlContext::pollStates() {
   }
 }
 
+void SdlContext::setClearColor(float r, float g, float b) {
+  glClearColor(r, g, b, 0.0f);
+}
+
 void SdlContext::clearColor() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void SdlContext::swapWindow() {
   SDL_GL_SwapWindow(window);
+}
+
+float SdlContext::getDeltaTime() {
+  uint64_t currentTime = SDL_GetPerformanceCounter();
+  uint64_t dt = currentTime - lastTime;
+  lastTime = currentTime;
+
+  double dtFloatSeconds = (double)dt * toSeconds;
+
+  // This is a rudimentary framerate calculation that depends on getDeltaTime being called once per frame.
+  frameTime += dtFloatSeconds;
+  ++frameCounter;
+  if (frameTime > 2.f) {
+    float frameTimeAvg = frameTime / (float)frameCounter;
+    printf("AVG FPS: %.0f\n", 1.f / frameTimeAvg); // print average FPS report every 2 seconds
+    frameTime = 0.f;
+    frameCounter = 0;
+  }
+
+  return (float)dtFloatSeconds; // TODO: should keep double precision?
 }
 
 }
