@@ -64,6 +64,31 @@ function( extern )
 endfunction()
 
 
+# Check if the user has the SDL2 environment variable set on Windows builds, and inform them how to do it
+function( sdl2_check_env )
+  if ( WIN32 AND NOT $ENV{SDL2} )
+    message( WARNING "\
+      The system environment variable SDL2 is not set.
+      On Windows, finding SDL2 may require that you do the following:
+      1. Download the appropriate SDL2 development libraries from https://www.libsdl.org/download-2.0.php
+      2. Unzip/decompress the downloaded archive to get the SDL2-2.#.# directory, where # is some version number.
+      3. Place the SDL2-2.#.# directory somewhere permanent. I use C:\\libs, but it doesn't matter where.
+      4. Set a system environment variable called SDL2 to point to that directory. For example, in Windows 10,
+         a. extract the directory to C:\\libs\\
+         b. in the start menu search for \"edit the system environment variables\" and click the matching result
+         c. click the \"Environment Variables\" button at the bottom of the small window that appears
+         d. in the next window that appears, under the lower pane labelled \"System variables,\" click \"New\"
+         e. in the \"Variable name\" field enter \"SDL2\" (without quotes)
+         f. in the \"Variable value\" field enter the full path to the SDL2-2.#.# directory or browse to it with
+            \"Browse Directory\"
+         g. click \"OK\" on each window that's come up so far to apply the changes
+      5. Restart any IDE, CLI, or other program you're using to build the CMake project and try again.
+    ")
+  endif ()
+  message( FATAL_ERROR "SDL2 NOT FOUND" )
+endfunction()
+
+
 # Deal with a few platform-specifc settings that don't fit anywhere else
 if ( WIN32 ) # Windows
 else () # Linux tested only

@@ -38,7 +38,10 @@ extern( link ${TARGET_PREFIX}glad )
 # for help with this, see https://trenki2.github.io/blog/2017/06/02/using-sdl2-with-cmake/
 # but keep in mind to use newer versions of things than quoted in that article
 # also, on Windows, try setting the environment variable SDL2 to point to the directory that has include and lib in it.
-find_package( SDL2 REQUIRED )
+find_package( SDL2 )
+if ( NOT ${SDL2_FOUND} )
+ sdl2_check_env()
+endif ()
 extern( include ${SDL2_INCLUDE_DIR} )
 extern( link ${SDL2_LIBRARY} )
 
