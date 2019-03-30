@@ -1,6 +1,7 @@
 
 #include "sdlc.h"
 #include <SDL.h>
+#include <stdio.h>
 
 namespace toyvox {
 
