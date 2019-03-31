@@ -64,11 +64,11 @@ function( extern )
 endfunction()
 
 
-# Check if the user has the SDL2 environment variable set on Windows builds, and inform them how to do it
-function( sdl2_check_env )
-  if ( WIN32 AND NOT $ENV{SDL2} )
+# Call if SDL2 cannot be found, and if it's a Windows build, output a message about how to possibly fix the problem.
+function( sdl2_debug_env )
+  if ( WIN32 )
     message( WARNING "\
-      The system environment variable SDL2 is not set.
+      The system environment variable SDL2 may not be set correctly.
       On Windows, finding SDL2 may require that you do the following:
       1. Download the appropriate SDL2 development libraries from https://www.libsdl.org/download-2.0.php
       2. Unzip/decompress the downloaded archive to get the SDL2-2.#.# directory, where # is some version number.
