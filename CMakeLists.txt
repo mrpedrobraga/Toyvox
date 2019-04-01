@@ -18,8 +18,14 @@ set( TARGET_PREFIX ${PROJECT_NAME}_ )
 # Define some helper functions that will be visible further down the source tree
 include( extern/cmake/helpers.cmake )
 
-# Build and assemble third-party dependencies
+# Point a variable to the include directory for use further down the source tree
+set( ${TARGET_PREFIX}INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include )
+
+# Deal with third-party dependencies
 add_subdirectory( extern )
 
-# Build this project's targets
-add_subdirectory( ToyvoxEngine )
+# Build the engine library targets
+add_subdirectory( source )
+
+# Build the tests
+add_subdirectory( tests )
