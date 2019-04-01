@@ -14,6 +14,7 @@ set( CMAKE_CXX_STANDARD_REQUIRED ON )
 # Name the project and set a prefix for naming internal targets and variables
 project( toyvox VERSION 0.01.00.01 LANGUAGES CXX C )
 set( TARGET_PREFIX ${PROJECT_NAME}_ )
+set( GLOBAL_TARGET_PREFIX ${TARGET_PREFIX} ) # TARGET_PREFIX may change per-scope, but this will not.
 
 # Define some helper functions that will be visible further down the source tree
 include( extern/cmake/helpers.cmake )
@@ -27,5 +28,10 @@ add_subdirectory( extern )
 # Build the engine library targets
 add_subdirectory( source )
 
-# Build the tests
-add_subdirectory( tests )
+# option to turn off tests
+option( ${TARGET_PREFIX}test_enable "build ${PROJECT_NAME} tests" ON )
+
+if ( ${TARGET_PREFIX}test_enable )
+  # Build the tests
+  add_subdirectory( tests )
+endif ()

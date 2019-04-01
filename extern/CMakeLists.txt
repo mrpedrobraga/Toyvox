@@ -1,11 +1,12 @@
 
+# making extern a project can avoid some policy conflicts from third-party libs with borked CMake policies
 project( ${TARGET_PREFIX}extern LANGUAGES CXX C )
 set( TARGET_PREFIX ${PROJECT_NAME}_ )
 
 # define directory for extra cmake scripts
 set( CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 
-# helpful message
+# helpful message, because answers to "how to remove submodule" vary widely on the internet and most of them are wrong.
 message( STATUS "To remove a submodule for real, see https://stackoverflow.com/a/36593218" )
 
 # add disired compiler flags to extern libraries but not to our own sources
@@ -44,6 +45,11 @@ extern( link ${SDL2_LIBRARY} )
 
 # Any miscellaneous linker flags that need to be added in a platform or environment-specific way
 extern( link ${extra_linker_flags} )
+
+# Deal with platform-specific things for external libs here so as not to pollute the file with lots of if(OS) junk.
+if ( UNIX )
+  extern( link dl )
+endif ()
 
 # Create an external dependency interface that will appear as ${TARGET_PREFIX}extern_interface outside of this scope.
 extern( finish )
