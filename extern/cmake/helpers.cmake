@@ -90,10 +90,6 @@ endfunction()
 
 
 # Deal with a few platform-specifc settings that don't fit anywhere else
-if ( WIN32 ) # Windows
-  if ( MSYS OR MINGW )
-    list( APPEND CMAKE_CXX_STANDARD_ARGS "-static-libgcc" "-static-libstdc++" )
-  endif()
-elseif ( UNIX )
+if ( UNIX )
   set( extra_linker_flags dl )
 endif ()
