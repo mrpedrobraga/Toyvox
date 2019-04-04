@@ -1,124 +1,41 @@
-
 #pragma once
 
 #include <stdio.h>
 #include <math.h>
-#include <vector>
-#include <string.h>
 
 #define GLM_FORCE_RADIANS 1
 #include <glm/glm.hpp>
 
-#include "events.h"
-
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-# define STRDUP _strdup
-#else
-# define STRDUP strdup
-#endif
+#include "components.h"
 
 namespace tvx {
 
 class VoxelModel
 {
-	//TODO Functions to import .tvx models
+	//TODO Functions to import .3dsprite models
 	//Transformation matrix
+
+	//The models that can be accessed externally even after transform.
+	//They will be used for PARENTING and other amazing stuff
+	glm::vec3 modelPoints[];
 };
 
 typedef VoxelModel VoxelAnimFrame;
 
-class Object {
-protected:
-	glm::vec3 position;
-	glm::vec3 scale;
-	glm::vec3 rotation;
-	//TODO use "mat4x4 LocRotScale;" instead of all those glm::vec3(s).
-
-	bool isVisible;
-	char *objectTypeTag;
-public:
-	//Getters, setters and adders.
-	glm::vec3 getPosition() { return position; }
-
-	void setPosition(glm::vec3 position) { this->position = position; }
-
-	void move(glm::vec3 amount) { this->position += amount; }
-
-	glm::vec3 getScale() { return scale; }
-
-	void setScale(glm::vec3 scale) { this->scale = scale; }
-
-	void addScale(glm::vec3 scale) { this->scale += scale; }
-
-	glm::vec3 getRotation() { return rotation; }
-
-	void setRotation(glm::vec3 rotation) { this->rotation = rotation; }
-
-	void rotate(glm::vec3 amount) { this->rotation += amount; }
-
-	char* getObjectTypeTag() { return this->objectTypeTag; }
-
-	//Constructors and Destructor
-
-	Object()
-	{
-		this->isVisible = true;
-	}
-
-	Object(const char *objectTypeTag, glm::vec3 position)
-	{
-		this->objectTypeTag = STRDUP(objectTypeTag);
-		this->position = position;
-	}
-};
-
 struct Scene {
 
-protected:
-	std::vector<Object*> objList;
-	char *name;
-	EventHandler* eventSheet;
-public:
+	/*
+	
+								TODO (by Mr. Henri)
 
-	EventHandler* getEventHandler()
-	{
-		return this->eventSheet;
-	}
+		Scenes will be the ones responsible by controlling the system of ECS.
 
-	//Getters and setters
+		Scenes will also hold information about the... well... scene,
+		like background color, Skybox Image, or Dynamic Skybox (sun and sky settings)
 
-	char* getTitle() {
-		return this->name;
-	}
+		Scenes will transform eventing into logic by messing with the components!
 
-	void addObj(Object* obj)
-	{
-		this->objList.push_back(obj);
-	}
-
-	Object* objectAt(int index)
-	{
-		return this->objList.at(index);
-	}
-
-	//Constructors and Destructor
-
-	Scene()
-	{
-
-	}
-
-	Scene(const char *name)
-	{
-		this->name = STRDUP(name);
-	}
-
-	~Scene()
-	{
-		//TODO Clear the parent of all it's childrens
-	}
-
-	//TODO Contructor for: "Scene(char name, Camera camera);"
+		You can add your own components to the enum that the scene looks for updating.
+	*/
 };
-
 }

@@ -6,14 +6,10 @@ using namespace glm;
 using namespace tvx;
 
 int main() {
-	Scene scene;
-	Object obj1;
 
-	scene = Scene("New Layout");
-	obj1 = Object("player", vec3(3, 4, 6));
-	scene.addObj(&obj1);
+	char k = getchar();
 
-	printf("%s", scene.objectAt(0)->getObjectTypeTag());
+	printf("%c", k);
 
 	getchar();
 	return 0;
