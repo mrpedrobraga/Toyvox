@@ -2,7 +2,7 @@
 #pragma once
 
 #include <stdio.h>
-#include <string.h>
+#include <string>
 
 #define GLM_FORCE_RADIANS 1
 #include <glm/glm.hpp>
@@ -15,8 +15,8 @@ namespace tvx {
 
 	struct TypeTag {
 
-		//TODO: Change to a better way of making strings
-		char tag[];
+		//TODO: Switch to a better (and custom) implementation of strings!
+		std::string tag;
 	};
 
 	struct Position {
@@ -77,7 +77,16 @@ namespace tvx {
 	};
 
 	//--------------------------------------------------------------------------//
-	//This is the default enum component. Be careful when editing it!
+	/*
+		This is the default enumarator containing the bit values of each component.
+		You can use multiple components in an object by logically merging the bit values together
+		For instance, if you want to have both Position and Velocity, the mask of the object will be
+		COMPONENT_POSITION | COMPONENT_VELOCITY.
+		That defines the mask to 10010 and tells the system what components you have because each digit
+		is a boolean.
+
+		You can add more components by creating another enumerator, as well.
+	*/
 
 	enum Collection {
 
