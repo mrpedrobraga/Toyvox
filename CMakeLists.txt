@@ -12,7 +12,7 @@ set( CMAKE_CXX_STANDARD 11 )
 set( CMAKE_CXX_STANDARD_REQUIRED ON )
 
 # Name the project and set a prefix for naming internal targets and variables
-project( toyvox VERSION 0.01.00.01 LANGUAGES CXX C )
+project( Toyvox VERSION 0.01.00.01 LANGUAGES CXX C )
 set( TARGET_PREFIX ${PROJECT_NAME}_ )
 
 # Define functions to enable/disable compiler flags depending on compiler support
@@ -41,4 +41,4 @@ endfunction()
 add_subdirectory( "./extern" )
 
 # Build this project's targets
-add_subdirectory( "./ToyvoxEngine" )
+add_subdirectory( "./tvxsrc" )
