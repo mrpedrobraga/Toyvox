@@ -1,25 +1,33 @@
-#include "tvxcore.h"
-#include <SDL.h>
+#include <iostream>
 #include <stdio.h>
+#include "tvxcore.h"
+#include "tester.h"
 
-Scene scene;
-Object obj1;
+using namespace std;
+using namespace tvx;
+
+
+void init() {
+
+	//Register all component sets to the handler using this syntax:
+	//componentHandler.add(name, set);
+	componentHandler.add("Type_Tag", cset_TypeTag);
+}
 
 int main()
 {
 
-	SDL_Init(SDL_INIT_VIDEO);
+	init();
 
-	scene = Scene("New Layout");
-	obj1 = Object("player", vec3(3, 4, 6));
-	scene.addObj(&obj1);
-	
-	printf("%s", scene.getTitle());
-	printf("%s", scene.objectAt(0)->getObjectTypeTag());
+	cout << scene1.get_title() << endl;
+
+	EntityUID ent1 = scene1.create_entity();
+	EntityUID ent2 = scene1.create_entity();
+	scene1.destroy_entity(&ent2);
+	EntityUID ent3 = scene1.create_entity();
+
+	cout << "Entity 1: " << ent1 << endl << "Entity 2: " << ent2 << endl << "Entity 3: " << ent3 << endl;
 
 	getchar();
-
-	SDL_Quit();
-
 	return 0;
 }

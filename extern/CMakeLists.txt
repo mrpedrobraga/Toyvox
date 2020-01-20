@@ -18,7 +18,7 @@ list( APPEND ${TARGET_PREFIX}external_includes find_package(SDL2) )
 list( APPEND ${TARGET_PREFIX}external_includes ${CMAKE_CURRENT_SOURCE_DIR}/glm )
 
 #Linker:
-list( APPEND ${TARGET_PREFIX}extra_linker_flags SDL2>)
+# list( APPEND ${TARGET_PREFIX}extra_linker_flags SDL2>)
 
 # Assemble the external dependencies together into a linkable interface that also automatically includes all
 # the necessary directories and linked libraries

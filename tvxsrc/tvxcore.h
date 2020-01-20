@@ -7,5 +7,6 @@
 */
 
 #pragma once
+#include <string.h>
 #include "objects.h"
-#include "events.h"
+#include "components.h"

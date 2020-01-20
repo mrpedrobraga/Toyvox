@@ -1,113 +1,182 @@
 #pragma once
-#include <math.h>
-#include <glm/glm.hpp>
 #include <string.h>
-#include <vector>
 #include <stdio.h>
-#include "events.h"
+#include <map>
+#include <algorithm>
 
-using namespace glm;
 using namespace std;
 
-class VoxelModel
+/* For now, using a fixed value! */
+#define MAX_ENTITIES 5000
+
+/* Creating my own typenames for better understanding (and usage) of the code. */
+using EntityUID = unsigned int;
+using EntityType = unsigned int;
+using ComponentType = string;
+
+/* UTIL FUNCTIONS */
+void log(string message)
 {
-	//TODO Functions to import .tvx models
-	//Transformation matrix
-};
+	cout << message << endl;
+}
 
-typedef VoxelModel VoxelAnimFrame;
+void err(string message)
+{
+	cerr << message << endl;
+}
+/* END OF UTIL FUNCTIONS */
 
-class Object {
-protected:
-	vec3 position;
-	vec3 scale;
-	vec3 rotation;
-	//TODO use "mat4x4 LocRotScale;" instead of all those vec3(s).
+namespace tvx
+{
 
-	bool isVisible;
-	char *objectTypeTag;
-public:
-	//Getters, setters and adders.
-	vec3 getPosition() { return position; }
-
-	void setPosition(vec3 position) { this->position = position; }
-
-	void move(vec3 amount) { this->position += amount; }
-
-	vec3 getScale() { return scale; }
-
-	void setScale(vec3 scale) { this->scale = scale; }
-
-	void addScale(vec3 scale) { this->scale += scale; }
-
-	vec3 getRotation() { return rotation; }
-
-	void setRotation(vec3 rotation) { this->rotation = rotation; }
-
-	void rotate(vec3 amount) { this->rotation += amount; }
-
-	char* getObjectTypeTag() { return this->objectTypeTag; }
-
-	//Constructors and Destructor
-
-	Object()
+	struct Component
 	{
-		this->isVisible = true;
-	}
+		//Contains data inside. Only here to be inherited later.
+	};
 
-	Object(const char *objectTypeTag, vec3 position)
+	class ComponentSet
 	{
-		this->objectTypeTag = strdup(objectTypeTag);
-		this->position = position;
-	}
-};
+		//Contains a set of 'childs' of 'Component' inside. Only here to be inherited later.
+	};
 
-struct Scene {
-
-protected:
-	std::vector<Object*> objList;
-	char *name;
-	EventHandler* eventSheet;
-public:
-
-	EventHandler* getEventHandler()
+	struct ComponentHandler //Handles all the component sets of a scene
 	{
-		return this->eventSheet;
-	}
+	private:
+		map<ComponentType, ComponentSet*> component_sets;
+	public:
+		void add(ComponentType type, ComponentSet set)
+		{
+			component_sets[type] = &set;
+		}
 
-	//Getters and setters
+		void remove(ComponentType type)
+		{
+			component_sets.erase(type);
+		}
 
-	char* getTitle() {
-		return this->name;
-	}
+		ComponentSet ctype(ComponentType type)
+		{
+			return *component_sets[type];
+		}
+	};
 
-	void addObj(Object* obj)
+	//A single set handler, because there's only one *type* of entity. To give labels to entity, add the 'TypeTag' component.
+	struct EntityHandler
 	{
-		this->objList.push_back(obj);
-	}
+	private:
+		//All the valied entity UIDs, densely packed for easy traversal.
+		//Every time an entity is removed, the last entity fills the blank space.
+		EntityUID entities[MAX_ENTITIES] = {0};
+		size_t entity_count = 0;
+		size_t next_id = 1;
 
-	Object* objectAt(int index)
+		//If there's already an entity with that index, increase until there's not.
+		//Sometimes you'll be in situations like this:
+		//	entities = {0, 1, 4, 5, 6}
+		//In this case, if next_id is, for example, 3, it's not a problem!
+		void update_nid()
+		{
+			while(find(begin(entities), end(entities), next_id) != end(entities))
+			{
+				next_id++;
+			}
+		}
+	public:
+		EntityUID create()
+		{
+			//If the last index isn't free, so we've reached the entity limited
+			//After all, it's densely packed data, there are no holes anywhere inside...
+			if(entities[MAX_ENTITIES-1] != 0)
+			{
+				err("Toyvox Warning: ENTITY LIMIT REACHED");
+				return 0;
+			}
+
+			entities[entity_count] = next_id;
+
+			entity_count += 1;
+			next_id += 1;
+			update_nid();
+
+			return next_id - 1;
+		}
+
+		//Note that here you use the index that create() gave you, not the entity UID!
+		void destroy(EntityUID* entity)
+		{
+			size_t position = *find(begin(entities), end(entities), *entity);
+
+			entities[position] = entities[entity_count];						//Move the last entity to this entity's place. Nice.
+			entities[entity_count] = 0;
+
+			if(*entity < next_id) 	//Set the next_id to fill in the hole next time create() is called.
+				next_id = *entity;   //Of course you're not gonna change next_id if entity is bigger, let's not leave any holes behind.
+			entity_count--;
+			*entity=0;
+		}
+	};
+	
+	/*
+					SYSTEM:
+		An abstract class.
+		Can do things to components.
+		Affects all "objects" but only ever
+		touches the components it needs to.
+	*/
+	class System
 	{
-		return this->objList.at(index);
-	}
+		System()
+		{}
+		virtual ~System()=0;
 
-	//Constructors and Destructor
+		/* A system's tick function will be overriden by the actual system. */
+		virtual int tick() = 0;
+	};
+	System::~System(){};
 
-	Scene()
+	/* 
+					SCENE:
+		Has the handlers that handle all
+		systems, components, entities.
+		With it, you can make rooms/levels.
+
+		You can have scenes talking to each
+		other easily, with 'global variables'.
+	*/
+
+	class Scene
 	{
+	public:
 
-	}
+		ComponentHandler component_handler;	
+		EntityHandler entity_handler;	
 
-	Scene(const char *name)
-	{
-		this->name = strdup(name);
-	}
+		Scene(char* title)
+		{
+			name = title;
+		}
 
-	~Scene()
-	{
-		//TODO Clear the parent of all it's childrens
-	}
+		~Scene()
+		{}
 
-	//TODO Contructor for: "Scene(char name, Camera camera);"
-};
+		inline char* get_title()
+		{
+			return strdup(name);
+		}
 
+		EntityUID create_entity() {
+			return entity_handler.create();
+		}
+
+		void destroy_entity(EntityUID* ent) {
+			entity_handler.destroy(ent);
+		}
+	private:
+		char* name;
+	};
+
+	/*
+					COMPONENT HANDLER:
+		Handles all entites' properties in a scene.
+	*/
+}
