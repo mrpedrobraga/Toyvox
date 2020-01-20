@@ -27,6 +27,12 @@ Also, you can animate it however you want! For example, you can animate it like 
 
 ![I mean, just look at this! Animated by Zach Soares.](https://i.pinimg.com/originals/47/04/97/470497843635a32fb5ecb9bd068a5310.gif)
 
+![This is me](https://media.discordapp.net/attachments/557838269648338944/668843369660940308/eu2.gif?width=400&height=202)
+
+![This is a car I made for a 48h game jam at my school](https://media.discordapp.net/attachments/557838269648338944/668841452855361540/multirotate.gif?width=400&height=202)
+
+![This is me, rendered like pixelart](https://media.discordapp.net/attachments/557838269648338944/668843449499385886/eu_andando.gif?width=400&height=202)
+
 ### Don't like voxelart? You can make high-LOD voxel models too!
 
 With those, the auto-lighting extension will look even better! The voxel approach, makes it possible to make high detailed models, with smooth color transitions. (If low-LOD is like pixelart, high voxel is an HD image! And HD images are dope!)
