@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <map>
 #include <algorithm>
-
+#include "any.h"
 using namespace std;
 
 /* For now, using a fixed value! */
@@ -13,6 +13,7 @@ using namespace std;
 using EntityUID = unsigned int;
 using EntityType = unsigned int;
 using ComponentType = string;
+using var = any;
 
 /* UTIL FUNCTIONS */
 void log(string message)
@@ -29,22 +30,20 @@ void err(string message)
 namespace tvx
 {
 
-	struct Component
-	{
-		//Contains data inside. Only here to be inherited later.
-	};
+	/* IMPORTANT NOTE:
+		This struct's functionality is incomplete.
+		It's going to be fixed on the next commit.
 
-	class ComponentSet
-	{
-		//Contains a set of 'childs' of 'Component' inside. Only here to be inherited later.
-	};
-
+		Note the 'any' type? The 'component_sets' map
+		holds ComponentSets but they're all different values
+		because ComponentSets is a template class.
+	*/
 	struct ComponentHandler //Handles all the component sets of a scene
 	{
 	private:
-		map<ComponentType, ComponentSet*> component_sets;
+		map<ComponentType, any*> component_sets;
 	public:
-		void add(ComponentType type, ComponentSet set)
+		void add(ComponentType type, any set)
 		{
 			component_sets[type] = &set;
 		}
@@ -54,9 +53,12 @@ namespace tvx
 			component_sets.erase(type);
 		}
 
-		ComponentSet ctype(ComponentType type)
+		template <class ComponentSet>
+		ComponentSet* get_c(string type)
 		{
-			return *component_sets[type];
+			any return_value = component_sets[ComponentType(type)];
+			assert(return_value.is<ComponentSet>());
+			return return_value;
 		}
 	};
 

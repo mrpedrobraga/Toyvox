@@ -1,3 +1,9 @@
 [submodule "extern/glm"]
 	path = extern/glm
 	url = https://github.com/g-truc/glm
+[submodule "extern/any-lite"]
+	path = extern/any-lite
+	url = https://github.com/martinmoene/any-lite.git
+[submodule "extern/any"]
+	path = extern/any
+	url = https://github.com/boostorg/any.git

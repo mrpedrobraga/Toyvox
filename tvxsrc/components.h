@@ -9,35 +9,8 @@
 namespace tvx
 {
 
-	/* Transforms: position, rotation, that kind of thing... */
-	struct Transform : Component
-	{
-		
-	};
-	struct TransformSet : ComponentSet
-	{
-	private:
-		Transform* cset[MAX_ENTITIES];
-	public:
-		void set(EntityUID e, Transform value)
-		{
-			cset[e] = &value;
-		}
-
-		Transform at(EntityUID e)
-		{
-			return *(cset[e]);
-		}
-
-		void apply(void (*f)(Transform))
-		{
-			for(const Transform* c : cset)
-				(*f)(*c);
-		}
-	};
-
 	/* Type tags, in case you want to differenciate types of entities. */
-	struct TypeTag : Component
+	struct TypeTag
 	{
 	private:
 		string value;
@@ -51,26 +24,43 @@ namespace tvx
 		{
 			value = new_value;
 		}
+
+		TypeTag()
+		{
+			value = "";
+		}
+
+		TypeTag(string new_value)
+		{
+			value = new_value;
+		}
 	};
-	struct TypeTagSet : ComponentSet
+
+	template <class Type>
+	struct ComponentSet
 	{
 	private:
-		TypeTag* cset[MAX_ENTITIES];
+		Type cset[MAX_ENTITIES];
 	public:
-		void set(EntityUID e, TypeTag value)
+		void set(EntityUID e, Type value)
 		{
-			cset[e] = &value;
+			cset[e] = value;
 		}
 
-		TypeTag get(EntityUID e)
+		Type get(EntityUID e)
 		{
-			return *(cset[e]);
+			return (cset[e]);
 		}
 
-		void apply(void (*f)(TypeTag))
+		void apply(void (*f)(Type))
 		{
-			for(const TypeTag* c : cset)
-				(*f)(*c);
+			for(const Type c : cset)
+				(*f)(c);
+		}
+
+		ComponentSet()
+		{
+			fill_n(cset, MAX_ENTITIES, Type());
 		}
 	};
 }

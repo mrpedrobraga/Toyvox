@@ -15,6 +15,6 @@ ComponentHandler componentHandler = ComponentHandler();
 EntityHandler entityHandler = EntityHandler();
 
 //Init all component sets!
-ComponentSet cset_TypeTag = ComponentSet();
+ComponentSet<TypeTag> TypeTags = ComponentSet<TypeTag>();
 
 /*			  END OF SCENE 1			*/
