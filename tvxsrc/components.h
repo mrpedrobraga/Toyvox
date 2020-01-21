@@ -1,6 +1,5 @@
 #pragma once
 #include <math.h>
-#include <glm/glm.hpp>
 #include <string.h>
 #include "objects.h"
 
@@ -52,10 +51,10 @@ namespace tvx
 			return (cset[e]);
 		}
 
-		void apply(void (*f)(Type))
+		void apply(void (*tick)(Type))
 		{
 			for(const Type c : cset)
-				(*f)(c);
+				(*tick)(c);
 		}
 
 		ComponentSet()

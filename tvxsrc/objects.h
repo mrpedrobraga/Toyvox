@@ -2,15 +2,17 @@
 #include <string.h>
 #include <stdio.h>
 #include <map>
+#include <glm/glm.hpp>
 #include <algorithm>
 #include "any.h"
 using namespace std;
-
 /* For now, using a fixed value! */
 #define MAX_ENTITIES 5000
+#define MAX_SYSTEMS 10
 
 /* Creating my own typenames for better understanding (and usage) of the code. */
 using EntityUID = unsigned int;
+using SystemUID = unsigned int;
 using EntityType = unsigned int;
 using ComponentType = string;
 using var = any;
@@ -127,14 +129,13 @@ namespace tvx
 	*/
 	class System
 	{
-		System()
-		{}
-		virtual ~System()=0;
-
-		/* A system's tick function will be overriden by the actual system. */
-		virtual int tick() = 0;
+	private:
+		bool active_status;
+	public:
+		bool is_active(){return active_status;}
+		void set_active(bool active){active_status = active;}
 	};
-	System::~System(){};
+
 
 	/* 
 					SCENE:
@@ -150,8 +151,8 @@ namespace tvx
 	{
 	public:
 
-		ComponentHandler component_handler;	
-		EntityHandler entity_handler;	
+		ComponentHandler* component_handler;	
+		EntityHandler* entity_handler;
 
 		Scene(char* title)
 		{
@@ -166,19 +167,61 @@ namespace tvx
 			return strdup(name);
 		}
 
-		EntityUID create_entity() {
-			return entity_handler.create();
+		EntityUID create_entity()
+		{
+			return entity_handler->create();
 		}
 
-		void destroy_entity(EntityUID* ent) {
-			entity_handler.destroy(ent);
+		void destroy_entity(EntityUID* ent)
+		{
+			entity_handler->destroy(ent);
 		}
+
+		/* Register handlers (overloaded functions!) */
+		void add_handler(ComponentHandler* x)
+		{
+			component_handler = x;
+		}
+
+		void add_handler(EntityHandler* x)
+		{
+			entity_handler = x;
+		}
+
+		/* Be sure to implement these functions whenever you create a new scene,
+		or assign them to an existing function!!! */
+		void (*on_load)();
+		void (*every_tick)();
 	private:
 		char* name;
 	};
 
-	/*
-					COMPONENT HANDLER:
-		Handles all entites' properties in a scene.
-	*/
+	/* 					Game				 		*/
+	/* 	The world basically contains which scene
+		is the current. Also, some other 'global'
+		settings.									*/
+
+	struct Game
+	{
+	private:
+		Scene* current_scene;
+		string game_title;
+		glm::ivec2 resolution;
+	public:
+		Scene get_current_scene(){return *current_scene;}
+		void set_current_scene(Scene* new_scene)
+		{
+			current_scene = new_scene;
+			new_scene->on_load();
+		}
+
+		string get_title(){return game_title;}
+		void set_title(string title){game_title = title;}
+
+		glm::ivec2 get_resolution(){return resolution;}
+		void set_resolution(glm::ivec2 res){resolution = res;}
+
+		Game()
+		{}
+	};
 }
