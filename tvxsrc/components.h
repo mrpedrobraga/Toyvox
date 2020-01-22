@@ -1,7 +1,7 @@
 #pragma once
 #include <math.h>
-#include <string.h>
 #include "objects.h"
+#include <string.h>
 
 /* Some default components and component sets! */
 
@@ -12,27 +12,38 @@ namespace tvx
 	struct TypeTag
 	{
 	private:
-		string value;
+		char* value;
 	public:
-		string get_value()
+		char* get_value()
 		{
 			return value;
 		}
 
-		void set_value(string new_value)
+		void set_value(const char* new_value)
+		{
+			set_value(strdup(new_value));
+		}
+
+		void set_value(char* new_value)
 		{
 			value = new_value;
 		}
 
 		TypeTag()
 		{
-			value = "";
+			value = strdup("");
 		}
 
-		TypeTag(string new_value)
+		TypeTag(const char* new_value)
+		{
+			value = strdup(new_value);
+		}
+
+		TypeTag(char* new_value)
 		{
 			value = new_value;
 		}
+
 	};
 
 	template <class Type>

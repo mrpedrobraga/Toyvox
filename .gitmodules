@@ -7,3 +7,6 @@
 [submodule "extern/any"]
 	path = extern/any
 	url = https://github.com/boostorg/any.git
+[submodule "extern/cmake/sdl2/sdl2-cmake-modules"]
+	path = extern/cmake/sdl2/sdl2-cmake-modules
+	url = https://github.com/aminosbh/sdl2-cmake-modules.git

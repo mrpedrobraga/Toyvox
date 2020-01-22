@@ -10,7 +10,7 @@ using namespace tvx;
 	header for each scene!				*/
 
 //Init Scene and all its handlers
-Scene scene1 = Scene(strdup("My Scene"));	
+Scene scene1 = Scene("My Scene");	
 ComponentHandler componentHandler = ComponentHandler();
 EntityHandler entityHandler = EntityHandler();
 
@@ -19,8 +19,8 @@ ComponentSet<TypeTag> TypeTags = ComponentSet<TypeTag>();
 
 /*			  END OF SCENE 1			*/
 
-void testFunc() {
-	cout << "Worked!" << endl;
+void test_func() {
+	cout << "Running!" << endl;
 }
 
 /* END OF SYSTEMS*/

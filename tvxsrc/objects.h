@@ -1,10 +1,10 @@
 #pragma once
-#include <string.h>
 #include <stdio.h>
 #include <map>
-#include <glm/glm.hpp>
 #include <algorithm>
+#include <string.h>
 #include "any.h"
+
 using namespace std;
 /* For now, using a fixed value! */
 #define MAX_ENTITIES 5000
@@ -14,18 +14,18 @@ using namespace std;
 using EntityUID = unsigned int;
 using SystemUID = unsigned int;
 using EntityType = unsigned int;
-using ComponentType = string;
-using var = any;
+using ComponentType = char*;
+using text = char*;
 
 /* UTIL FUNCTIONS */
-void log(string message)
+void log(const char* x)
 {
-	cout << message << endl;
+	cout << x << endl;
 }
 
-void err(string message)
+void err(const char* x)
 {
-	cerr << message << endl;
+	cerr << x << endl;
 }
 /* END OF UTIL FUNCTIONS */
 
@@ -45,6 +45,12 @@ namespace tvx
 	private:
 		map<ComponentType, any*> component_sets;
 	public:
+
+		void add(const char* type, any set)
+		{
+			add(strdup(type), set);
+		}
+
 		void add(ComponentType type, any set)
 		{
 			component_sets[type] = &set;
@@ -56,7 +62,7 @@ namespace tvx
 		}
 
 		template <class ComponentSet>
-		ComponentSet* get_c(string type)
+		ComponentSet* get_c(text type)
 		{
 			any return_value = component_sets[ComponentType(type)];
 			assert(return_value.is<ComponentSet>());
@@ -106,17 +112,17 @@ namespace tvx
 		}
 
 		//Note that here you use the index that create() gave you, not the entity UID!
-		void destroy(EntityUID* entity)
+		void destroy(EntityUID& entity)
 		{
-			size_t position = *find(begin(entities), end(entities), *entity);
+			size_t position = *find(begin(entities), end(entities), entity);
 
 			entities[position] = entities[entity_count];						//Move the last entity to this entity's place. Nice.
 			entities[entity_count] = 0;
 
-			if(*entity < next_id) 	//Set the next_id to fill in the hole next time create() is called.
-				next_id = *entity;   //Of course you're not gonna change next_id if entity is bigger, let's not leave any holes behind.
+			if(entity < next_id) 	//Set the next_id to fill in the hole next time create() is called.
+				next_id = entity;   //Of course you're not gonna change next_id if entity is bigger, let's not leave any holes behind.
 			entity_count--;
-			*entity=0;
+			entity=0;
 		}
 	};
 	
@@ -159,12 +165,17 @@ namespace tvx
 			name = title;
 		}
 
+		Scene(const char* title)
+		{
+			name = strdup(title);
+		}
+
 		~Scene()
 		{}
 
 		inline char* get_title()
 		{
-			return strdup(name);
+			return (name);
 		}
 
 		EntityUID create_entity()
@@ -172,7 +183,7 @@ namespace tvx
 			return entity_handler->create();
 		}
 
-		void destroy_entity(EntityUID* ent)
+		void destroy_entity(EntityUID& ent)
 		{
 			entity_handler->destroy(ent);
 		}
@@ -190,38 +201,12 @@ namespace tvx
 
 		/* Be sure to implement these functions whenever you create a new scene,
 		or assign them to an existing function!!! */
-		void (*on_load)();
-		void (*every_tick)();
+		void (*on_load)()=0;
+		void (*every_tick)(float)=0;
+		void (*on_key_pressed)(float)=0;
+		void (*on_key_released)(float)=0;
 	private:
 		char* name;
 	};
 
-	/* 					Game				 		*/
-	/* 	The world basically contains which scene
-		is the current. Also, some other 'global'
-		settings.									*/
-
-	struct Game
-	{
-	private:
-		Scene* current_scene;
-		string game_title;
-		glm::ivec2 resolution;
-	public:
-		Scene get_current_scene(){return *current_scene;}
-		void set_current_scene(Scene* new_scene)
-		{
-			current_scene = new_scene;
-			new_scene->on_load();
-		}
-
-		string get_title(){return game_title;}
-		void set_title(string title){game_title = title;}
-
-		glm::ivec2 get_resolution(){return resolution;}
-		void set_resolution(glm::ivec2 res){resolution = res;}
-
-		Game()
-		{}
-	};
 }

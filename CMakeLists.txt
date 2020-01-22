@@ -1,7 +1,8 @@
-
 # Set required version and policy version
 cmake_minimum_required( VERSION 3.9.2 FATAL_ERROR )
 cmake_policy( VERSION 3.9.2...3.13 )
+
+message( "root:" )
 
 # Prohibit screwing up the source tree
 set( CMAKE_DISABLE_IN_SOURCE_BUILD ON )
