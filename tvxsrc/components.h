@@ -46,31 +46,71 @@ namespace tvx
 
 	};
 
+
+	//This class hold many components on a list!
 	template <class Type>
-	struct ComponentSet
+	struct ComponentSet //Also densely packed! See EntityHandler to see how this works!
 	{
 	private:
+
+		EntityUID entities[MAX_ENTITIES] = {0};
 		Type cset[MAX_ENTITIES];
-	public:
-		void set(EntityUID e, Type value)
+		size_t entity_count = 0;
+		size_t next_id = 1;
+
+		void update_nid()
 		{
-			cset[e] = value;
+			while(find(begin(entities), end(entities), next_id) != end(entities))
+			{
+				next_id++;
+			}
 		}
 
-		Type get(EntityUID e)
+	public:
+
+		void set(EntityUID e, Type value)
+		{
+			if(entities[MAX_ENTITIES-1] != 0)
+			{
+				err("Toyvox Warning: ENTITY LIMIT REACHED");
+				return;
+			}
+
+			entities[entity_count] = next_id;
+			cset[e] = value;
+			entity_count += 1;
+			next_id += 1;
+			update_nid();
+		}
+
+		Type& of(EntityUID e)
 		{
 			return (cset[e]);
 		}
 
-		void apply(void (*tick)(Type))
+		void apply(void (*tick)(Type&))
 		{
-			for(const Type c : cset)
-				(*tick)(c);
+			for(size_t i = 0; i < entity_count; i++)
+				(*tick)(cset[i]);
+		}
+
+		//Note that here you use the index that create() gave you, not the entity UID!
+		void remove(EntityUID& entity)
+		{
+			size_t position = *find(begin(entities), end(entities), entity);
+
+			entities[position] = entities[entity_count];						//Move the last entity to this entity's place. Nice.
+			cset[position] = cset[entity_count];
+			entities[entity_count] = 0;
+			cset[entity_count] = 0;
+
+			if(entity < next_id) 	//Set the next_id to fill in the hole next time create() is called.
+				next_id = entity;   //Of course you're not gonna change next_id if entity is bigger, let's not leave any holes behind.
+			entity_count--;
+			entity=0;
 		}
 
 		ComponentSet()
-		{
-			fill_n(cset, MAX_ENTITIES, Type());
-		}
+		{}
 	};
 }

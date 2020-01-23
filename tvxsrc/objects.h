@@ -20,12 +20,12 @@ using text = char*;
 /* UTIL FUNCTIONS */
 void log(const char* x)
 {
-	cout << x << endl;
+	cout << x << "\n";
 }
 
 void err(const char* x)
 {
-	cerr << x << endl;
+	cerr << x << "\n";
 }
 /* END OF UTIL FUNCTIONS */
 
@@ -40,20 +40,20 @@ namespace tvx
 		holds ComponentSets but they're all different values
 		because ComponentSets is a template class.
 	*/
-	struct ComponentHandler //Handles all the component sets of a scene
+	class ComponentHandler //Handles all the component sets of a scene
 	{
 	private:
 		map<ComponentType, any*> component_sets;
 	public:
 
-		void add(const char* type, any set)
-		{
-			add(strdup(type), set);
-		}
-
 		void add(ComponentType type, any set)
 		{
 			component_sets[type] = &set;
+		}
+
+		void add(const char* type, any set)
+		{
+			add(strdup(type), set);
 		}
 
 		void remove(ComponentType type)
@@ -68,10 +68,16 @@ namespace tvx
 			assert(return_value.is<ComponentSet>());
 			return return_value;
 		}
+
+		template <class ComponentSet>
+		ComponentSet* get_c(const char* type)
+		{
+			get_c<ComponentSet>(strdup(type));
+		}
 	};
 
 	//A single set handler, because there's only one *type* of entity. To give labels to entity, add the 'TypeTag' component.
-	struct EntityHandler
+	class EntityHandler
 	{
 	private:
 		//All the valied entity UIDs, densely packed for easy traversal.
@@ -201,10 +207,10 @@ namespace tvx
 
 		/* Be sure to implement these functions whenever you create a new scene,
 		or assign them to an existing function!!! */
-		void (*on_load)()=0;
-		void (*every_tick)(float)=0;
-		void (*on_key_pressed)(float)=0;
-		void (*on_key_released)(float)=0;
+		void (*on_load)(Scene&)=0;
+		void (*every_tick)(float, Scene&)=0;
+		void (*on_key_pressed)(float, Scene&)=0;
+		void (*on_key_released)(float, Scene&)=0;
 	private:
 		char* name;
 	};
