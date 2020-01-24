@@ -10,3 +10,6 @@
 [submodule "extern/cmake/sdl2/sdl2-cmake-modules"]
 	path = extern/cmake/sdl2/sdl2-cmake-modules
 	url = https://github.com/aminosbh/sdl2-cmake-modules.git
+[submodule "extern/SDL-mirror"]
+	path = extern/SDL-mirror
+	url = https://github.com/spurious/SDL-mirror
