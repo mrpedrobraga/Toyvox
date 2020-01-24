@@ -3,7 +3,7 @@
 #include <string.h>
 #include "tvxutil.h"
 #include "events.h"
-#include "SDL2/SDL.h"
+#include "SDL.h"
 
 //For sleeping
 #include <chrono>
@@ -85,7 +85,7 @@ namespace tvx {
 			if (current_scene == 0)
 				return;
 
-			while(SDL_WaitEvent(&event)) {
+			while(SDL_PollEvent(&event)) {
 				if(should_stop) break;
 
 				switch(event.type) { //Handle events
@@ -102,6 +102,7 @@ namespace tvx {
 						if (!(current_scene->on_event == 0)) current_scene->on_event(event, *current_scene);
 				}
 
+				cout << "Running\n";
 				SDL_Delay(framedelay);
 			}
 		}

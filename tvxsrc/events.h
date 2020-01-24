@@ -1,11 +1,11 @@
 #pragma once
-#include <SDL2/SDL.h>
-#include <map>
+#include "SDL.h"
+#include <unordered_map>
 #include <string>
 
 class KeyMap {
 private:
-	std::map<std::string, SDL_Keycode*> mapped_keys;
+	std::unordered_map<std::string, SDL_Keycode*> mapped_keys;
 public:
 	void add(std::string key_name, SDL_Keycode* keys) {
 		mapped_keys["name"] = keys;
