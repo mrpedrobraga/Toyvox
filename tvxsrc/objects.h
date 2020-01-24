@@ -1,4 +1,7 @@
 #pragma once
+
+#define SDL_MAIN_HANDLED
+#include <SDL2/SDL.h>
 #include <stdio.h>
 #include <map>
 #include <algorithm>
@@ -204,7 +207,7 @@ namespace tvx
 		or assign them to an existing function!!! */
 		void (*on_load)(Scene&)=0;
 		void (*every_tick)(float, Scene&)=0;
-		void (*on_key_pressed)(float, Scene&)=0;
+		void (*on_key_pressed)(SDL_Event&, Scene&)=0;
 		void (*on_key_released)(float, Scene&)=0;
 	private:
 		std::string name;

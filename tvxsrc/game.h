@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <string.h>
 #include "tvxutil.h"
+#include "events.h"
 #include "SDL2/SDL.h"
 
 //For sleeping
@@ -80,14 +81,13 @@ namespace tvx {
 		        SDL_WINDOW_OPENGL                  // flags - see below
 		    );
 
-			if (current_scene = 0)
+			if (current_scene == 0)
 				return;
 
 			while(SDL_WaitEvent(&event)) {
+				if(should_stop) break;
 
-				if(event.type == SDL_KEYDOWN) {
-					break;
-				}
+				if (event.type == SDL_KEYDOWN && !(current_scene->on_key_pressed == 0)) current_scene->on_key_pressed(event, *current_scene);
 
 				SDL_Delay(framedelay);
 			}
@@ -99,4 +99,8 @@ namespace tvx {
 			should_stop = true;
 		}
 	};
+
+	get_key(SDL_Event& e) {
+		return e.key.keysym.sym;
+	}
 }
