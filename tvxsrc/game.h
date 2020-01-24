@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <string.h>
 #include "tvxutil.h"
-#include "SDL2/SDL.h"
+#include "SDL.h"
 
 //For sleeping
 #include <chrono>

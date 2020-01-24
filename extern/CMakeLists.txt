@@ -13,5 +13,8 @@ add_subdirectory( SDL-mirror )
 extern( link SDL2main )
 extern( link SDL2-static )
 
+add_subdirectory( glm )
+extern( link glm )
+
 # Create an external dependency ui that will appear as ${TARGET_PREFIX}_extern_interface outside of this scope.
 extern( finish )

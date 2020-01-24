@@ -309,6 +309,7 @@ __pycache__/
 CMakeSettings.json
 /Win32
 *.sln
+out/
 
 # sketchup backup files
 *.skb
