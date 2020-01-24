@@ -166,20 +166,15 @@ namespace tvx
 		ComponentHandler* component_handler;	
 		EntityHandler* entity_handler;
 
-		Scene(char* title)
+		Scene(std::string title)
 		{
 			name = title;
 		}
-
-		Scene(const char* title)
-		{
-			name = strdup(title);
-		}
-
+		
 		~Scene()
 		{}
 
-		inline char* get_title()
+		inline std::string get_title()
 		{
 			return (name);
 		}
@@ -212,7 +207,7 @@ namespace tvx
 		void (*on_key_pressed)(float, Scene&)=0;
 		void (*on_key_released)(float, Scene&)=0;
 	private:
-		char* name;
+		std::string name;
 	};
 
 }

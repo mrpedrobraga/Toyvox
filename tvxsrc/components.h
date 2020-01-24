@@ -83,9 +83,16 @@ namespace tvx
 			update_nid();
 		}
 
+		Type& is_assigned_to(EntityUID& e)
+		{
+			auto it = std::find(begin(entities), end(entities), e);
+			return (it != std::end(entities));
+		}
+
 		Type& of(EntityUID e)
 		{
-			return (cset[e]);
+			auto it = std::find(begin(entities), end(entities), e);
+			return (cset[std::distance(entities, it)]);
 		}
 
 		void apply(void (*tick)(Type&))
