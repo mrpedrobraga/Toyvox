@@ -8,13 +8,14 @@
 #include <chrono>
 #include <thread>
 
-#define WINDOWS_THREADS //If you're using windows threads
-
-#ifdef WINDOWS_THREADS
-#include <windows.h>
-#define sleep(n) Sleep(n)
-#else
-#define sleep(n) std::this_thread::sleep_for(std::chrono::milliseconds(n))
+#ifdef WIN32
+# define WINDOWS_THREADS //If you're using windows threads
+# ifdef WINDOWS_THREADS
+#   include <windows.h>
+#   define sleep(n) Sleep(n)
+# else
+#   define sleep(n) std::this_thread::sleep_for(std::chrono::milliseconds(n))
+# endif
 #endif
 
 namespace tvx {

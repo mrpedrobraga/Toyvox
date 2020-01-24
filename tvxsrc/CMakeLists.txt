@@ -16,5 +16,5 @@ add_executable( ${TARGET_NAME}
   minigame.cpp
   )
 target_link_libraries( ${TARGET_NAME}
-  ${TARGET_PREFIX}external
+  ${TARGET_PREFIX}_interface
   )
