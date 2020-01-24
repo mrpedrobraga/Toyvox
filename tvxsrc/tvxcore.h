@@ -10,5 +10,6 @@
 #include "objects.h"
 #include "components.h"
 #include "game.h"
+#include "events.h"
 #include <SDL2/SDL.h>
 #include "tvxutil.h"

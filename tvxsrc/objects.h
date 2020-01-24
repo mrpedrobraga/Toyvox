@@ -208,7 +208,8 @@ namespace tvx
 		void (*on_load)(Scene&)=0;
 		void (*every_tick)(float, Scene&)=0;
 		void (*on_key_pressed)(SDL_Event&, Scene&)=0;
-		void (*on_key_released)(float, Scene&)=0;
+		void (*on_key_released)(SDL_Event&, Scene&)=0;
+		void (*on_event)(SDL_Event&, Scene&)=0;
 	private:
 		std::string name;
 	};

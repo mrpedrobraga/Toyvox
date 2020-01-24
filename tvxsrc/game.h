@@ -88,7 +88,19 @@ namespace tvx {
 			while(SDL_WaitEvent(&event)) {
 				if(should_stop) break;
 
-				if (event.type == SDL_KEYDOWN && !(current_scene->on_key_pressed == 0)) current_scene->on_key_pressed(event, *current_scene);
+				switch(event.type) { //Handle events
+					case SDL_KEY_DOWN:
+						if (!(current_scene->on_key_pressed == 0)) current_scene->on_key_pressed(event, *current_scene);
+						break;
+					case SDL_KEY_UP:
+						if (!(current_scene->on_key_released == 0)) current_scene->on_key_released(event, *current_scene);
+						break;
+					case SDL_QUIT:
+						stop();
+						break;
+					default:
+						if (!(current_scene->on_event == 0)) current_scene->on_event(event, *current_scene);
+				}
 
 				SDL_Delay(framedelay);
 			}
@@ -101,6 +113,7 @@ namespace tvx {
 		}
 	};
 
+	//Get's a key from an event
 	get_key(SDL_Event& e) {
 		return e.key.keysym.sym;
 	}
