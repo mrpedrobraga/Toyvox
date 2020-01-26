@@ -1,7 +1,11 @@
 
-set( TARGET_NAME ${TARGET_PREFIX}game )
-
 message( "> tvxsrc:" )
+
+set( TARGET_NAME ${TARGET_PREFIX}module )
+
+add_subdirectory( modules )
+
+set( TARGET_NAME ${TARGET_PREFIX}game )
 
 # headers are included as well as source just to aid in IDE parsing (it helps in CLion at least)
 add_executable( ${TARGET_NAME}

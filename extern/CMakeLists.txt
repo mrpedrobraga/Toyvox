@@ -17,5 +17,12 @@ extern( link SDL2-static )
 add_subdirectory( glm )
 extern( link glm )
 
+add_library( octree STATIC
+  simpleoctree/src/Pool.hpp simpleoctree/src/Pool.cpp
+  simpleoctree/src/Octree.hpp simpleoctree/src/Octree.cpp
+  )
+target_include_directories( octree PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/simpleoctree/src )
+extern( link octree )
+
 # Create an external dependency ui that will appear as ${TARGET_PREFIX}_extern_interface outside of this scope.
 extern( finish )
