@@ -24,5 +24,9 @@ add_library( octree STATIC
 target_include_directories( octree PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/simpleoctree/src )
 extern( link octree )
 
+add_library( glad STATIC glad/src/glad.c )
+target_include_directories( glad PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/glad/include/ )
+extern( link glad )
+
 # Create an external dependency ui that will appear as ${TARGET_PREFIX}_extern_interface outside of this scope.
 extern( finish )
