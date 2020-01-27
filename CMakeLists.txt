@@ -8,13 +8,13 @@ message( "root:" )
 set( CMAKE_DISABLE_IN_SOURCE_BUILD ON )
 set( CMAKE_DISABLE_SOURCE_CHANGES ON )
 
-# Use C++11 everywhere
-set( CMAKE_CXX_STANDARD 11 )
+# Use C++14 everywhere
+set( CMAKE_CXX_STANDARD 14 )
 set( CMAKE_CXX_STANDARD_REQUIRED ON )
 
 # Name the project and set a prefix for naming internal targets and variables
 project( Toyvox VERSION 0.01.00.01 LANGUAGES CXX C )
-set( TARGET_PREFIX ${PROJECT_NAME}_ )
+set( TARGET_PREFIX ${PROJECT_NAME} )
 
 # Handy Helpers
 include( helpers.cmake )

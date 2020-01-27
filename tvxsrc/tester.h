@@ -1,10 +1,4 @@
-#include <stdio.h>
-#include <iostream>
-#include <glm/glm.hpp>
-#include "tvxcore.h"
-
-using namespace std;
-using namespace tvx;
+#include "game.h"
 
 /* 				SCENE 1 				*/
 /*	Alternatively, you can have one

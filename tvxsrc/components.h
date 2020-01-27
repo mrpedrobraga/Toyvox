@@ -1,7 +1,6 @@
 #pragma once
-#include <math.h>
+#include "tvxutil.h"
 #include "objects.h"
-#include <string.h>
 
 /* Some default components and component sets! */
 

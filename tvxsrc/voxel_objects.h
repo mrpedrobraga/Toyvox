@@ -1,6 +1,5 @@
 #pragma once
-#include <glm/glm.hpp>
-#include <algorithm>
+#include "tvxutil.h"
 /*
 class VoxelAnim {
 
