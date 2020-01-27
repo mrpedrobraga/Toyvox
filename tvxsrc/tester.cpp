@@ -1,7 +1,8 @@
-#include <iostream>
-#include <stdio.h>
-#include "tvxcore.h"
+
 #include "tester.h"
+
+using namespace std;
+using namespace tvx;
 
 using namespace tvx;
 

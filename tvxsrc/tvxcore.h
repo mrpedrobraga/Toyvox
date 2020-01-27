@@ -9,7 +9,5 @@
 #pragma once
 #include "objects.h"
 #include "components.h"
-#include "game.h"
 #include "events.h"
-#include "SDL.h"
-#include "tvxutil.h"
+#include "game.h"

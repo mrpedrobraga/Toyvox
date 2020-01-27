@@ -1,29 +1,29 @@
-#include <iostream>
-#include <stdio.h>
 
-#include "tvxcore.h"
+#include "game.h"
 
-tvx::KeyMap keys = KeyMap();
+using namespace tvx;
 
-tvx::Game myGame = tvx::Game();
-tvx::Scene scene = tvx::Scene("My Scene");
+KeyMap keys = KeyMap();
+std::unique_ptr<Game> game;
+std::shared_ptr<Scene> scene;
 
-void key_press(SDL_Event& e, tvx::Scene& s) {
-
-	if(keys.is(tvx::get_key(e), "Close Key")) myGame.stop();
+void key_press(SDL_Event& e, Scene& s) {
+	if(keys.getAction(get_key(e)) == "Close") game->stop();
 }
 
 int main(int argc, char* argv[]) {
+	game = std::make_unique<Game>();
+	scene = std::make_shared<Scene>("My Scene");
 
-	keys.add("Close Key", {SDLK_UP});
+	keys.add("Close", SDLK_UP);
 
-	myGame.set_title("My Toyvox Game");
-	myGame.set_resolution(320, 180);    
+	game->set_title("My Toyvox Game");
+	game->set_resolution(320, 180);
 
-	myGame.set_current_scene(&scene);
-	scene.on_key_pressed = key_press;
+	game->set_current_scene(scene);
+	scene->on_key_pressed = key_press;
 
-	myGame.run();
+	game->run();
 
     return 0;
 }

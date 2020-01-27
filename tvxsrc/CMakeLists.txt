@@ -1,21 +1,20 @@
 
-set( TARGET_NAME ${TARGET_PREFIX}game )
-
 message( "> tvxsrc:" )
 
-# headers are included as well as source just to aid in IDE parsing (it helps in CLion at least)
-add_executable( ${TARGET_NAME}
-#  components.h
-#  objects.h
-#  game.h
-#  display.h
-#  tvxcore.h
-#  tvxutil.h
-#  any.h
-#  voxels.h
-  
-  sdltest.cpp
-  )
-target_link_libraries( ${TARGET_NAME}
-  ${TARGET_PREFIX}_interface
-  )
+set( TARGET_NAME ${TARGET_PREFIX}_module )
+
+add_subdirectory( modules ) # Targets built in here will have names starting with ${TARGET_PREFIX}_module
+
+set( TARGET_NAME ${TARGET_PREFIX}_game )
+
+# Targets built out here will have names starting with ${TARGET_PREFIX}_game
+
+# SDL Test
+add_executable( ${TARGET_NAME}_sdltest sdltest.cpp )
+target_link_libraries( ${TARGET_NAME}_sdltest ${TARGET_PREFIX}_interface )
+target_include_directories( ${TARGET_NAME}_sdltest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
+
+# Minigame
+add_executable( ${TARGET_NAME}_minigame minigame.cpp )
+target_link_libraries( ${TARGET_NAME}_minigame ${TARGET_PREFIX}_interface )
+target_include_directories( ${TARGET_NAME}_minigame PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
