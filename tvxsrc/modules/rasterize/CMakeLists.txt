@@ -1,11 +1,13 @@
 
 message( "> rasterize:" )
 
-add_library( ${TARGET_NAME}_rast STATIC
+set( LIB_PREFIX ${TARGET_NAME}_rast )
+
+add_library( ${LIB_PREFIX} STATIC
   rast.hpp rast.cpp
   )
-target_include_directories( ${TARGET_NAME}_rast PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} )
-target_link_libraries( ${TARGET_NAME}_rast PUBLIC ${TARGET_PREFIX}_interface )
+target_include_directories( ${LIB_PREFIX} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} )
+target_link_libraries( ${LIB_PREFIX} PUBLIC ${TARGET_PREFIX}_interface )
 
-add_executable( ${TARGET_NAME}_rast_test test.cpp )
-target_link_libraries( ${TARGET_NAME}_rast_test ${TARGET_NAME}_rast )
+add_executable( ${LIB_PREFIX}_test rastTest.cpp )
+target_link_libraries( ${LIB_PREFIX}_test ${LIB_PREFIX} )

@@ -1,15 +1,6 @@
 [submodule "extern/glm"]
 	path = extern/glm
 	url = https://github.com/g-truc/glm
-[submodule "extern/any-lite"]
-	path = extern/any-lite
-	url = https://github.com/martinmoene/any-lite.git
-[submodule "extern/any"]
-	path = extern/any
-	url = https://github.com/boostorg/any.git
-[submodule "extern/cmake/sdl2/sdl2-cmake-modules"]
-	path = extern/cmake/sdl2/sdl2-cmake-modules
-	url = https://github.com/aminosbh/sdl2-cmake-modules.git
 [submodule "extern/SDL-mirror"]
 	path = extern/SDL-mirror
 	url = https://github.com/spurious/SDL-mirror

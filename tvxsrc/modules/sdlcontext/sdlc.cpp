@@ -61,7 +61,7 @@ SdlContext::SdlContext(const char *applicationName) {
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, CONTEXT_FLAGS);
 
   // Windowed, fullscreen desktop (borderless), or dedicated fullscreen
-  // windowFlags |= SDL_WINDOW_SHOWN; // SDL_WINDOW_SHOWN, SDL_WINDOW_FULLSCREEN_DESKTOP or SDL_WINDOW_FULLSCREEN
+  windowFlags |= SDL_WINDOW_SHOWN; // SDL_WINDOW_SHOWN, SDL_WINDOW_FULLSCREEN_DESKTOP or SDL_WINDOW_FULLSCREEN
 
   // Create the window
   window = SDL_CreateWindow(
