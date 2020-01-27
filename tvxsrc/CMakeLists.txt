@@ -5,15 +5,16 @@ message( "> tvxsrc:" )
 
 # headers are included as well as source just to aid in IDE parsing (it helps in CLion at least)
 add_executable( ${TARGET_NAME}
-  components.h
-  objects.h
-  game.h
-  display.h
-  tvxcore.h
-  tvxutil.h
-  any.h
+#  components.h
+#  objects.h
+#  game.h
+#  display.h
+#  tvxcore.h
+#  tvxutil.h
+#  any.h
+#  voxels.h
   
-  minigame.cpp
+  sdltest.cpp
   )
 target_link_libraries( ${TARGET_NAME}
   ${TARGET_PREFIX}_interface

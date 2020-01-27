@@ -46,6 +46,33 @@ namespace tvx
 
 	};
 
+	enum CameraType {
+		TVX_PERSPECTIVE_CAMERA,
+		TVX_ORTOGRAPHIC_CAMERA,
+		TVX_2D_CAMERA,
+	}
+
+	struct Camera
+	{
+	private:
+		glm::mat4x4 transform;
+		glm::vec2 camera_size;
+		float plane_distance;
+		float near_plane;
+		float far_plane;
+	public:
+		Camera(glm::mat4x4 _transform, glm::vec2 _camera_size, float _plane_distance, float _near_plane, float _far_plane):
+			transform(_transform), camera_size(_camera_size), plane_distance(_plane_distance), near_plane(_near_plane), far_plane(_far_plane)
+			{}
+
+		Camera(glm::vec2 _camera_size, float _plane_distance, float _near_plane, float _far_plane):
+			transform(1.0), camera_size(_camera_size), plane_distance(_plane_distance), near_plane(_near_plane), far_plane(_far_plane)
+			{}
+
+		Camera(glm::vec2 _camera_size, float _plane_distance):
+			transform(1.0), camera_size(_camera_size), plane_distance(_plane_distance), near_plane(0.0), far_plane(2000.0)
+			{}
+	};
 
 	//This class hold many components on a list!
 	template <class Type>

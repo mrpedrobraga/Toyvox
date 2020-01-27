@@ -4,6 +4,7 @@
 #include "tvxutil.h"
 #include "events.h"
 #include "SDL.h"
+#include "display.h"
 
 //For sleeping
 #include <chrono>
@@ -86,13 +87,13 @@ namespace tvx {
 				return;
 
 			while(SDL_PollEvent(&event)) {
-				if(should_stop) break;
+				if(should_stop) stop(); break;
 
 				switch(event.type) { //Handle events
-					case SDL_KEY_DOWN:
+					case SDL_KEYDOWN:
 						if (!(current_scene->on_key_pressed == 0)) current_scene->on_key_pressed(event, *current_scene);
 						break;
-					case SDL_KEY_UP:
+					case SDL_KEYUP:
 						if (!(current_scene->on_key_released == 0)) current_scene->on_key_released(event, *current_scene);
 						break;
 					case SDL_QUIT:
