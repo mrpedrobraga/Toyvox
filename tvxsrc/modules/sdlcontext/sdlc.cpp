@@ -22,10 +22,11 @@ namespace tvx {
   ){
     (void)source; (void)type; (void)id;
     (void)severity; (void)length; (void)userParam;
-    fprintf(stderr, "%s\n", message);
-    if (severity==GL_DEBUG_SEVERITY_HIGH) {
-      fprintf(stderr, "Aborting...\n");
-      abort();
+    if (severity == GL_DEBUG_SEVERITY_HIGH) {
+      SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "%s\n", message);
+      exit(102);
+    } else {
+	    SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "%s\n", message);
     }
   }
   static void setupOpenglDebugCallback() {
@@ -44,7 +45,7 @@ SdlContext::SdlContext(const char *applicationName) {
   SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO);
   SDL_SetHint(SDL_HINT_FRAMEBUFFER_ACCELERATION, "1");
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
-    fprintf(stderr, "Failed to initialize SDL: %s\n", SDL_GetError());
+    SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize SDL: %s\n", SDL_GetError());
     exit(1);
   }
 
@@ -73,24 +74,24 @@ SdlContext::SdlContext(const char *applicationName) {
       windowFlags              // flags
   );
   if ( ! window) {
-    fprintf(stderr, "Failed to create SDL window: %s\n", SDL_GetError());
+	  SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to create SDL window: %s\n", SDL_GetError());
     exit(1);
   }
 
   // Create the context
   glContext = SDL_GL_CreateContext(window);
   if ( ! glContext) {
-    fprintf(stderr, "Fail: %s\n", SDL_GetError());
+	  SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Fail: %s\n", SDL_GetError());
     exit(1);
   }
 
   // Load OpenGL pointers and print info
-  printf("OpenGL loaded\n");
+  SDL_Log("OpenGL loading...\n");
   gladLoadGLLoader(SDL_GL_GetProcAddress);
-  printf("Vendor:          %s\n", glGetString(GL_VENDOR));
-  printf("Renderer:        %s\n", glGetString(GL_RENDERER));
-  printf("Version OpenGL:  %s\n", glGetString(GL_VERSION));
-  printf("Version GLSL:    %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+  SDL_Log("Vendor:          %s\n", glGetString(GL_VENDOR));
+  SDL_Log("Renderer:        %s\n", glGetString(GL_RENDERER));
+  SDL_Log("Version OpenGL:  %s\n", glGetString(GL_VERSION));
+  SDL_Log("Version GLSL:    %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
   // setup OpenGL debug callbacks if debug build active
   setupOpenglDebugCallback();
@@ -267,11 +268,11 @@ float SdlContext::getDeltaTime() {
   double dtFloatSeconds = (double)dt * toSeconds;
 
   // This is a rudimentary framerate calculation that depends on getDeltaTime being called once per frame.
-  frameTime += dtFloatSeconds;
+  frameTime += (float)dtFloatSeconds;
   ++frameCounter;
   if (frameTime > 2.f) {
     float frameTimeAvg = frameTime / (float)frameCounter;
-    printf("AVG FPS: %.0f\n", 1.f / frameTimeAvg); // print average FPS report every 2 seconds
+	  SDL_Log("AVG FPS: %.0f\n", 1.f / frameTimeAvg); // print average FPS report every 2 seconds
     frameTime = 0.f;
     frameCounter = 0;
   }
