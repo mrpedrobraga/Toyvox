@@ -3,10 +3,15 @@
 
 #include <cmath>
 #include <cassert>
+#include <cstdarg>
+#include <cstdio>
 
 #include <string>
 #include <fstream>
 #include <memory>
+#include <atomic>
+#include <functional>
+#include <unordered_map>
 
 #define SDL_MAIN_HANDLED
 #include <SDL.h>

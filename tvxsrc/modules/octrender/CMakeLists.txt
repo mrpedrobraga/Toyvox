@@ -16,8 +16,5 @@ add_custom_command(
   COMMENT "symbolic link resources folder from ${CMAKE_CURRENT_SOURCE_DIR}/assets => ${CMAKE_CURRENT_BINARY_DIR}/assets"
 )
 
-add_executable( ${LIB_PREFIX}_test_octree octrenTestOctree.cpp )
-target_link_libraries( ${LIB_PREFIX}_test_octree ${LIB_PREFIX} )
-
-add_executable( ${LIB_PREFIX}_test_render octrenTestRender.cpp )
-target_link_libraries( ${LIB_PREFIX}_test_render ${LIB_PREFIX} ${TARGET_NAME}_sdlc )
+add_executable( ${LIB_PREFIX}_test testOctren.cpp )
+target_link_libraries( ${LIB_PREFIX}_test ${LIB_PREFIX} ${TARGET_NAME}_sdlc )

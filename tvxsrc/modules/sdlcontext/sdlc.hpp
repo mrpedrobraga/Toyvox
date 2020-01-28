@@ -2,6 +2,7 @@
 #pragma once
 
 #include "extern.hpp"
+#include "topics.hpp"
 
 #if !SDL_VERSION_ATLEAST(2, 0, 8)
 #error "SDL2 version 2.0.8 or newer required."
@@ -14,7 +15,7 @@ namespace tvx {
       virtual ~SdlContext();
       void setFullscreenMode(SDL_WindowFlags mode);
       bool pollEvents();
-      void pollStates();
+      static void pollStates();
       void setClearColor(float r, float g, float b);
       void clearColor();
       void swapWindow();
@@ -31,5 +32,7 @@ namespace tvx {
 
       uint32_t frameCounter = 0;
       float frameTime = 0;
+      
+      Subscription logSub, errSub;
   };
 }
