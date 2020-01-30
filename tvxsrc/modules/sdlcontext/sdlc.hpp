@@ -14,7 +14,7 @@ namespace tvx {
       explicit SdlContext(const char *applicationName);
       virtual ~SdlContext();
       void setFullscreenMode(SDL_WindowFlags mode);
-      bool pollEvents();
+      bool pollEvents(bool isQuitRequested);
       static void pollStates();
       void setClearColor(float r, float g, float b);
       void clearColor();

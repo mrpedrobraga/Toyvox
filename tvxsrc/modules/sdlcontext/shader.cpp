@@ -8,7 +8,6 @@ namespace tvx {
 	GLuint shaderLoadString(const char *vsString, const char *fsString) {
 		if (!vsString || !fsString) {
 			SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Bad arguments passed to shaderLoadString");
-			exit(106);
 		}
 
 		GLuint shaderProgram = glCreateProgram();
@@ -81,7 +80,6 @@ namespace tvx {
 	GLuint shaderLoadFile(const char *vsFilename, const char *fsFilename) {
 		if (!vsFilename || !fsFilename) {
 			SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Bad arguments passed to shaderLoadFile");
-			exit(105);
 		}
 
 		char vsString[MAX_SHADER_SZ];
@@ -116,7 +114,6 @@ namespace tvx {
 	void shaderReloadFile(GLuint *program, const char *vsFilename, const char *fsFilename) {
 		if (!program || !vsFilename || !fsFilename) {
 			SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Bad arguments passed to shaderReloadFile");
-			exit(104);
 		}
 		GLuint reloadedProgram = shaderLoadFile(vsFilename, fsFilename);
 		if (reloadedProgram) {

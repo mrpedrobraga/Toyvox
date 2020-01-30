@@ -26,7 +26,6 @@ namespace tvx {
 		(void) userParam;
 		if (severity == GL_DEBUG_SEVERITY_HIGH) {
 			SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "%s\n", message);
-			exit(102);
 		} else {
 			SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "%s\n", message);
 		}
@@ -40,6 +39,8 @@ namespace tvx {
 					GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, true
 		);
 	}
+#endif
+
 	static const char *SDL_priority_prefixes[SDL_NUM_LOG_PRIORITIES] = {
 				nullptr,
 				"VERBOSE",
@@ -51,17 +52,16 @@ namespace tvx {
 	};
 	void SDL_LogOutput(void *userdata, int category, SDL_LogPriority priority, const char *message) {
 		if (priority <= SDL_LOG_PRIORITY_INFO) {
-			publishf("log", "%s  %s\n", priority == SDL_LOG_PRIORITY_INFO ? "" : SDL_priority_prefixes[priority], message);
+			publishf("log", "%s  %s", priority == SDL_LOG_PRIORITY_INFO ? "" : SDL_priority_prefixes[priority], message);
 		} else {
-			publishf("err", "%s  %s\n", SDL_priority_prefixes[priority], message);
+			publishf("err", "%s  %s", SDL_priority_prefixes[priority], message);
+			if (priority == SDL_LOG_PRIORITY_CRITICAL) { exit(9000); }
 		}
 	}
-
-#endif
-
+	
 	SdlContext::SdlContext(const char *applicationName)
-				: logSub("log", [](void *data) -> void { fprintf(stdout, "%s", (char *) data); }),
-				  errSub("err", [](void *data) -> void { fprintf(stderr, "%s", (char *) data); }) {
+				: logSub("log", [](void *data) -> void { fprintf(stdout, "%s\n", (char *) data); }),
+				  errSub("err", [](void *data) -> void { fprintf(stderr, "%s\n", (char *) data); }) {
 
 		SDL_LogSetOutputFunction(SDL_LogOutput, nullptr);
 		SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO);
@@ -70,13 +70,12 @@ namespace tvx {
 		SDL_SetHint(SDL_HINT_FRAMEBUFFER_ACCELERATION, "1");
 		if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
 			SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize SDL: %s\n", SDL_GetError());
-			exit(1);
 		}
 
 		// Request an OpenGL context OF THE CORRECT VERSION MATCHING GLAD (should be core) upon window creation
 		SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 		// Also request a depth buffer
 		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -93,20 +92,18 @@ namespace tvx {
 					applicationName,         // window title
 					SDL_WINDOWPOS_UNDEFINED, // x (SDL_WINDOWPOS_UNDEFINED means "doesn't matter")
 					SDL_WINDOWPOS_UNDEFINED, // y (SDL_WINDOWPOS_UNDEFINED means "doesn't matter")
-					1024,                    // width
-					512,                     // height
+					768,                     // width
+					768,                     // height
 					windowFlags              // flags
 		);
 		if (!window) {
 			SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to create SDL window: %s\n", SDL_GetError());
-			exit(1);
 		}
 
 		// Create the context
 		glContext = SDL_GL_CreateContext(window);
 		if (!glContext) {
 			SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Fail: %s\n", SDL_GetError());
-			exit(1);
 		}
 
 		// Load OpenGL pointers and print info
@@ -125,6 +122,7 @@ namespace tvx {
 
 		// Enable depth test and face culling.
 		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LESS);
 		glEnable(GL_CULL_FACE);
 
 		// Get whatever window size ended up being and setup viewport
@@ -154,7 +152,7 @@ namespace tvx {
 	/*
 	 * returns false if application should exit
 	 */
-	bool SdlContext::pollEvents() {
+	bool SdlContext::pollEvents(bool isQuitRequested) {
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
@@ -167,8 +165,8 @@ namespace tvx {
 					}
 					break;
 				case SDL_KEYDOWN: {
-					switch (event.key.keysym.scancode) { // Make escape toggle between captured mouse and free mouse
-						case SDL_SCANCODE_ESCAPE: {
+					switch (event.key.keysym.sym) { // Make escape toggle between captured mouse and free mouse
+						case SDLK_ESCAPE: {
 							if (SDL_GetWindowGrab(window)) {  // window is currently grabbed - ungrab.
 								SDL_SetWindowGrab(window, SDL_FALSE);
 								SDL_SetRelativeMouseMode(SDL_FALSE);
@@ -179,19 +177,12 @@ namespace tvx {
 								publish("window_grab");
 							}
 						} break;
+						PUB_KEYD(space, SDLK_SPACE)
+						PUB_KEYD(del, SDLK_DELETE)
 						default: break;
-					}
-					if (SDL_GetRelativeMouseMode()) { // if mouse is captured, handle key down events (placeholder examples)
-						switch (event.key.keysym.sym) {
-							PUB_KEYD(space, SDLK_SPACE)
-							default: break;
-						}
 					}
 				} break;
 				case SDL_KEYUP:
-					if (SDL_GetRelativeMouseMode()) { // if mouse is captured
-						// placeholder for key up events
-					}
 					break;
 				case SDL_MOUSEBUTTONDOWN: {
 					switch (event.button.button) {
@@ -234,7 +225,7 @@ namespace tvx {
 				default: break;
 			}
 		}
-		return true; // no quit condition detected
+		return !isQuitRequested;
 	}
 	
 	/*
