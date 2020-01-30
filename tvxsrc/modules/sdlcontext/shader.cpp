@@ -5,6 +5,8 @@ static constexpr int MAX_SHADER_SZ = 65535;
 
 namespace tvx {
 	
+	// TODO: For some reason, compilation errors are not being caught and instead bad shaders crash at runtime
+	
 	GLuint shaderLoadString(const char *vsString, const char *fsString) {
 		if (!vsString || !fsString) {
 			SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Bad arguments passed to shaderLoadString");
@@ -19,7 +21,7 @@ namespace tvx {
 			int params = -1;
 			glGetShaderiv(vsHandle, GL_COMPILE_STATUS, &params);
 			if (GL_TRUE != params) {
-				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "ERROR: vertex shader index %u did not compile\n", vsHandle);
+				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "vertex shader index %u did not compile\n", vsHandle);
 				const int maxLength = 2048;
 				int actualLength = 0;
 				char slog[2048];
@@ -39,7 +41,7 @@ namespace tvx {
 			int params = -1;
 			glGetShaderiv(fsHandle, GL_COMPILE_STATUS, &params);
 			if (GL_TRUE != params) {
-				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "ERROR: fragment shader index %u did not compile\n", fsHandle);
+				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "fragment shader index %u did not compile\n", fsHandle);
 				const int maxLength = 2048;
 				int actualLength = 0;
 				char slog[2048];
@@ -62,7 +64,7 @@ namespace tvx {
 			int params = -1;
 			glGetProgramiv(shaderProgram, GL_LINK_STATUS, &params);
 			if (GL_TRUE != params) {
-				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "ERROR: could not link shader program GL index %u\n", shaderProgram);
+				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "could not link shader program GL index %u\n", shaderProgram);
 				const int maxLength = 2048;
 				int actualLength = 0;
 				char plog[2048];
@@ -116,9 +118,11 @@ namespace tvx {
 			SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Bad arguments passed to shaderReloadFile");
 		}
 		GLuint reloadedProgram = shaderLoadFile(vsFilename, fsFilename);
-		if (reloadedProgram) {
+		if (program && reloadedProgram) {
 			glDeleteProgram(*program);
 			*program = reloadedProgram;
+		} else {
+			SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Shader reload failed!\n");
 		}
 	}
 }

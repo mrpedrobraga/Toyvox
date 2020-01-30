@@ -20,6 +20,8 @@ namespace tvx {
       void clearColor();
       void swapWindow();
       float getDeltaTime();
+      int getWindowWidth();
+      int getWindowHeight();
     private:
       SDL_Window *window = nullptr;
       uint32_t windowFlags = SDL_WINDOW_OPENGL;

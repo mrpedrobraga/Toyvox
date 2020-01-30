@@ -71,11 +71,13 @@ void setUpVao(GLuint &vao, GLuint &vbo) {
 	glBindVertexArray( 0 );
 }
 
+static const char *vert = "cover.vert";
+static const char *frag = "randOct.frag";
 int main(int argc, char **argv) {
 	SdlContext sdlc("Toyvox Octree Rendering Test");
 	GpuBuffer::reportUboSupport();
 	
-	GLuint shader = shaderLoadFile("oct.vert", "oct.frag");;
+	GLuint shader = shaderLoadFile(vert, frag);;
 	bool reloadShader = false, isQuitRequested = false; // CLICK ANYWHERE IN WINDOW TO RELOAD SHADER FROM FILE
 	Subscription reloadSub("mouse_down_left", [&reloadShader] () -> void { reloadShader = true; });
 	Subscription quitSub("key_down_space", [&isQuitRequested] () -> void { isQuitRequested = true; }); // SPACE EXITS
@@ -84,16 +86,17 @@ int main(int argc, char **argv) {
 	GLuint triVbo = 0;
 	setUpVao(triVao, triVbo);
 	GpuBuffer voxels(0);
-	GpuBuffer uniforms(1);
+	GpuBuffer globals(1);
 	
 	float time = 0.f;
 	while (sdlc.pollEvents(isQuitRequested)) {
 		SdlContext::pollStates();
-		time += sdlc.getDeltaTime();
+		float dt = sdlc.getDeltaTime();
+		time += dt;
 		
 		if (reloadShader) {
 			reloadShader = false;
-			shaderReloadFile(&shader, "oct.vert", "randOct.frag");
+			shaderReloadFile(&shader, vert, frag);
 		}
 
 		sdlc.clearColor();
@@ -101,14 +104,13 @@ int main(int argc, char **argv) {
 		for (int i = 0; i < voxels.getCapacity<uint32_t>(); ++i) {
 			uint_fast32_t x, y, z;
 			libmorton::morton3D_32_decode(i, x, y, z);
-			// uint8_t colorByte = (x & 0x3u) | (y & 0xCu) | (z & 0x30u) | (0xC0u);
-			uint32_t colorByte = (x & 0xFFu) | (y << 8u & 0xFF00u) | (z & 0xFF0000u) | (0xFF000000u);
+			uint32_t colorByte = (x & 0xFFu) | (y << 8u & 0xFF00u) | (z << 16u & 0xFF0000u) | (0x01000000u);
 			voxels.writeToCpu<uint32_t>(i, colorByte);
 		}
 		voxels.sendToGpu();
 		
-		// uniforms.writeToCpu<glm::vec4>(0, glm::vec4(time, 0.f, 0.f, 0.f));
-		// uniforms.sendToGpu();
+		globals.writeToCpu<glm::vec4>(0, glm::vec4(sdlc.getWindowWidth(), sdlc.getWindowHeight(), time, dt));
+		globals.sendToGpu();
 		
 		glUseProgram(shader);
 		glBindVertexArray(triVao);

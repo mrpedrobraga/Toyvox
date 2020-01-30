@@ -118,7 +118,9 @@ namespace tvx {
 		setupOpenglDebugCallback();
 
 		// Use v-sync
-		SDL_GL_SetSwapInterval(1);
+		if (-1 == SDL_GL_SetSwapInterval(1)) {
+			SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "Unable to set vertical sync to desired mode.\n");
+		}
 
 		// Enable depth test and face culling.
 		glEnable(GL_DEPTH_TEST);
@@ -285,5 +287,10 @@ namespace tvx {
 	
 	  return (float)dtFloatSeconds; // TODO: should keep double precision?
 	}
-
+	int SdlContext::getWindowWidth() {
+		return windowWidth;
+	}
+	int SdlContext::getWindowHeight() {
+		return windowHeight;
+	}
 }

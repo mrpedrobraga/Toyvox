@@ -1,8 +1,14 @@
 #version 420 core
 
+layout (location = 0) in vec2 resIn;
+layout (location = 1) in float timeIn;
+layout (location = 2) in float dtIn;
 layout (location = 0) out vec4 fsOut;
-#define iResolution vec2(768.0, 768.0)
-#define iTime 10.0
+
+layout (std140, binding = 0) uniform shader_data {
+	vec4 buf[4096]; // pack any data into vec4 to make full use of the aligned storage
+};
+
 #define BUNNY
 //#define SPHERE
 
@@ -98,15 +104,15 @@ vec2 rotate2d(vec2 v, float a) {
 }
 
 void main() {
-	vec2 uv = gl_FragCoord.xy / iResolution.xy;
-	vec2 screenPos = (gl_FragCoord.xy / iResolution.xy) * 2.0 - 1.0;
+	vec2 uv = gl_FragCoord.xy / resIn.xy;
+	vec2 screenPos = (gl_FragCoord.xy / resIn.xy) * 2.0 - 1.0;
 	vec3 cameraDir = vec3(0.0, 0.0, 0.8);
 	vec3 cameraPlaneU = vec3(1.0, 0.0, 0.0);
-	vec3 cameraPlaneV = vec3(0.0, 1.0, 0.0) * iResolution.y / iResolution.x;
+	vec3 cameraPlaneV = vec3(0.0, 1.0, 0.0) * resIn.y / resIn.x;
 	vec3 rayDir = cameraDir + screenPos.x * cameraPlaneU + screenPos.y * cameraPlaneV;
-	vec3 rayPos = vec3(0.0, 0.25 * sin(iTime * 2.7), -3.4);
-	rayPos.xz = rotate2d(rayPos.xz, iTime);
-	rayDir.xz = rotate2d(rayDir.xz, iTime);
+	vec3 rayPos = vec3(0.0, 0.25 * sin(timeIn * 2.7), -3.4);
+	rayPos.xz = rotate2d(rayPos.xz, timeIn);
+	rayDir.xz = rotate2d(rayDir.xz, timeIn);
 	Ray ray;
 	Hit hit = Hit(vec3(0.0, 0.0, 0.0), 0.0, 0.0, 0.0, vec3(0.0, 0.0, 0.0));
 	ray.o = rayPos;

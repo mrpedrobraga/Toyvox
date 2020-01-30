@@ -1,8 +1,10 @@
 
 #version 420 core
 
+layout (location = 0) in vec2 resIn;
+layout (location = 1) in float timeIn;
+layout (location = 2) in float dtIn;
 layout (location = 0) out vec4 fsOut;
-layout (location = 1) in vec4 uniforms;
 
 layout (std140, binding = 0) uniform shader_data {
   vec4 buf[4096]; // pack any data into vec4 to make full use of the aligned storage
@@ -101,11 +103,11 @@ uint type(uint uShortIdx) {
   return floatBitsToUint(buf[0][uShortIdx]);
 }
 
-vec3 rDir() {
-  vec2 uv = vec2(gl_FragCoord.x * 2.0 - 1.0, gl_FragCoord.y * 2.0 - 1.0);
-  vec3 rayDir = normalize(vec3(uv, 1.0));
-  return rayDir;
-}
+//vec3 rDir() {
+//  vec2 uv = vec2(gl_FragCoord.x * 2.0 - 1.0, gl_FragCoord.y * 2.0 - 1.0);
+//  vec3 rayDir = normalize(vec3(uv, 1.0));
+//  return rayDir;
+//}
 
 //void trace(uint x1, uint y1, uint z1, inout uint x2, inout uint y2, inout uint z2) {
 //  uint x = x1;
