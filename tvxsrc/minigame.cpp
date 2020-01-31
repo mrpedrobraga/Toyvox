@@ -1,5 +1,4 @@
-
-#include "game.h"
+#include "tvxcore.h"
 
 using namespace tvx;
 
@@ -8,7 +7,7 @@ std::unique_ptr<Game> game;
 std::shared_ptr<Scene> scene;
 
 void key_press(SDL_Event& e, Scene& s) {
-	if(keys.getAction(get_key(e)) == "Close") game->stop();
+	if(keys.is_action(get_key(e), "Close")) game->stop();
 }
 
 int main(int argc, char* argv[]) {

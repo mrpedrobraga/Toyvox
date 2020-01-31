@@ -7,7 +7,7 @@
 */
 
 #pragma once
-#include "objects.h"
 #include "components.h"
 #include "events.h"
 #include "game.h"
+#include "tvxutil.h"

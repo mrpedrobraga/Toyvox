@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tvxutil.h"
 #include "events.h"
 #include "display.h"
 #include "objects.h"
@@ -19,8 +20,8 @@ namespace tvx {
 
 			std::shared_ptr<Scene> current_scene;
 			std::string game_title = strdup("Game");
-			glm::ivec2 resolution = glm::ivec2();
-			SDL_Window *window = nullptr;
+			glm::ivec2 resolution;
+			Display display;
 			bool should_stop = false;
 
 			SDL_Event event = {};
@@ -34,28 +35,27 @@ namespace tvx {
 				}
 			}
 
+			Display &get_current_display() { return display; }
+			void set_current_display(const Display &new_display) {
+				display = new_display;
+			}
+
+
 			std::string get_title() const { return game_title; }
 			void set_title(std::string title) { game_title = std::move(title); }
 
-			glm::ivec2 get_resolution() const { return resolution; }
-			void set_resolution(glm::ivec2 res) { resolution = res; }
-			void set_resolution(int x, int y) { resolution = glm::ivec2(x, y); }
+			glm::ivec2 get_resolution() const { return display.resolution; }
+			void set_resolution(glm::ivec2 res) { resolution = res; display.resolution = res; }
+			void set_resolution(int x, int y) { resolution = glm::ivec2(x, y); display.resolution = glm::ivec2(x, y); }
 
-			Game() noexcept :
-						resolution(640, 360) {
-				SDL_Init(SDL_INIT_EVERYTHING);
-				window = SDL_CreateWindow(
-							game_title.c_str(),                  // window title
-							SDL_WINDOWPOS_UNDEFINED,           // initial x position
-							SDL_WINDOWPOS_UNDEFINED,           // initial y position
-							resolution.x,                               // width, in pixels
-							resolution.y,                               // height, in pixels
-							SDL_WINDOW_OPENGL                  // flags - see below
-				);
+			Game():
+				resolution(640, 360)
+			{
+				display = Display(game_title, resolution, SDL_WINDOW_RESIZABLE);
+				SDL_Init(SDL_INIT_EVERYTHING);	
 			}
 
 			~Game() {
-				SDL_DestroyWindow(window);
 
 				SDL_Quit();
 			}

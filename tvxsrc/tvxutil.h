@@ -18,6 +18,7 @@
 
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
+#include <glad/glad.h>
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL

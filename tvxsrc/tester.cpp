@@ -1,4 +1,4 @@
-
+#include "tvxcore.h"
 #include "tester.h"
 
 using namespace std;
