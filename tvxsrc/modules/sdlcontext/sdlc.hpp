@@ -1,7 +1,9 @@
 
 #pragma once
 
-#include "extern.hpp"
+#include <SDL_video.h>
+#include <SDL_version.h>
+#include <glad/glad.h>
 
 #if !SDL_VERSION_ATLEAST(2, 0, 8)
 #error "SDL2 version 2.0.8 or newer required."
