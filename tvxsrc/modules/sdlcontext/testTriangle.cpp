@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	
-	while (sdlc.pollEvents()) {
+	while (sdlc.pollEvents(false)) {
 		sdlc.clearColor();
 		float dt = sdlc.getDeltaTime();
 		

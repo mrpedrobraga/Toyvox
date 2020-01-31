@@ -15,6 +15,7 @@
 
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
+#include <SDL_log.h>
 
 #include <glad/glad.h>
 

@@ -182,14 +182,21 @@ vec3 findnormal(vec3 p, float epsilon, vec3 fp)
 	return normalize(normal);
 }
 
+vec2 rotate2d(vec2 v, float a) {
+	float sinA = sin(a);
+	float cosA = cos(a);
+	return vec2(v.x * cosA - v.y * sinA, v.y * cosA + v.x * sinA);
+}
+
 void main() {
 	
 	fsOut = vec4(0.0);
 	vec2 uv = (gl_FragCoord.xy * 2.0 - resIn) / resIn.y;
 	float size = 1.0;
 	
-	vec3 ro = vec3(0.5+sin(timeIn)*0.4, 0.5+cos(timeIn)*0.4, timeIn);
+	vec3 ro = vec3(0.5+sin(timeIn)*0.1, 0.5+cos(timeIn)*0.1, timeIn * 0.1);
 	vec3 rd = normalize(vec3(uv, 1.0));
+	rd.xz = rotate2d(rd.xz, timeIn * 0.1);
 	
 	vec3 lro = mod(ro, size);
 	vec3 fro = ro - lro;

@@ -10,7 +10,7 @@ int main(int argc, char **argv) {
 
 	// can set up stuff that uses opengl here
 
-	while (sdlc.pollEvents()) {
+	while (sdlc.pollEvents(false)) {
 
 		// blank out the frame with a solid color
 		sdlc.clearColor();

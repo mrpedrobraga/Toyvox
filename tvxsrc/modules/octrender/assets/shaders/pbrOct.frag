@@ -1,4 +1,3 @@
-
 #version 420 core
 
 layout (location = 0) in vec2 resIn;
@@ -7,7 +6,7 @@ layout (location = 2) in float dtIn;
 layout (location = 0) out vec4 fsOut;
 
 layout (std140, binding = 0) uniform shader_data {
-  vec4 buf[4096]; // pack any data into vec4 to make full use of the aligned storage
+	vec4 buf[4096];// pack any data into vec4 to make full use of the aligned storage
 };
 
 const uint mortonX[256] = {
@@ -32,7 +31,7 @@ const uint mortonX[256] = {
 0x241200, 0x241201, 0x241208, 0x241209, 0x241240, 0x241241, 0x241248, 0x241249, 0x248000, 0x248001, 0x248008, 0x248009,
 0x248040, 0x248041, 0x248048, 0x248049, 0x248200, 0x248201, 0x248208, 0x248209, 0x248240, 0x248241, 0x248248, 0x248249,
 0x249000, 0x249001, 0x249008, 0x249009, 0x249040, 0x249041, 0x249048, 0x249049, 0x249200, 0x249201, 0x249208, 0x249209,
-0x249240, 0x249241, 0x249248, 0x249249};
+0x249240, 0x249241, 0x249248, 0x249249 };
 const uint mortonY[256] = {
 0x000000, 0x000002, 0x000010, 0x000012, 0x000080, 0x000082, 0x000090, 0x000092, 0x000400, 0x000402, 0x000410, 0x000412,
 0x000480, 0x000482, 0x000490, 0x000492, 0x002000, 0x002002, 0x002010, 0x002012, 0x002080, 0x002082, 0x002090, 0x002092,
@@ -55,7 +54,7 @@ const uint mortonY[256] = {
 0x482400, 0x482402, 0x482410, 0x482412, 0x482480, 0x482482, 0x482490, 0x482492, 0x490000, 0x490002, 0x490010, 0x490012,
 0x490080, 0x490082, 0x490090, 0x490092, 0x490400, 0x490402, 0x490410, 0x490412, 0x490480, 0x490482, 0x490490, 0x490492,
 0x492000, 0x492002, 0x492010, 0x492012, 0x492080, 0x492082, 0x492090, 0x492092, 0x492400, 0x492402, 0x492410, 0x492412,
-0x492480, 0x492482, 0x492490, 0x492492};
+0x492480, 0x492482, 0x492490, 0x492492 };
 const uint mortonZ[256] = {
 0x000000, 0x000004, 0x000020, 0x000024, 0x000100, 0x000104, 0x000120, 0x000124, 0x000800, 0x000804, 0x000820, 0x000824,
 0x000900, 0x000904, 0x000920, 0x000924, 0x004000, 0x004004, 0x004020, 0x004024, 0x004100, 0x004104, 0x004120, 0x004124,
@@ -78,35 +77,160 @@ const uint mortonZ[256] = {
 0x904800, 0x904804, 0x904820, 0x904824, 0x904900, 0x904904, 0x904920, 0x904924, 0x920000, 0x920004, 0x920020, 0x920024,
 0x920100, 0x920104, 0x920120, 0x920124, 0x920800, 0x920804, 0x920820, 0x920824, 0x920900, 0x920904, 0x920920, 0x920924,
 0x924000, 0x924004, 0x924020, 0x924024, 0x924100, 0x924104, 0x924120, 0x924124, 0x924800, 0x924804, 0x924820, 0x924824,
-0x924900, 0x924904, 0x924920, 0x924924};
+0x924900, 0x924904, 0x924920, 0x924924 };
 
-void morton32(out uint morton, uint x, uint y, uint z){
-  morton = 0;
-  morton =  mortonZ[(z >> 16) & 0xFFu] | mortonY[(y >> 16) & 0xFFu] | mortonX[(x >> 16) & 0xFFu];
-  morton = morton << 48 | mortonZ[(z >> 8) & 0xFFu] | mortonY[(y >> 8) & 0xFFu] | mortonX[(x >> 8) & 0xFFu];
-  morton = morton << 24 | mortonZ[z & 0xFFu] | mortonY[y & 0xFFu] | mortonX[x & 0xFFu];
-}
-void morton8(out uint morton, uint x, uint y, uint z) { morton = mortonZ[z] | mortonY[y] | mortonX[x]; }
-void mortonVoxelDword(out uint mortonVoxel, uint uDwordIdx) {
-  mortonVoxel = floatBitsToUint(buf[uDwordIdx / 4][uDwordIdx % 4]);
+uint morton32(uint x, uint y, uint z){
+	uint morton = 0;
+	morton =  mortonZ[(z >> 16) & 0xFFu] | mortonY[(y >> 16) & 0xFFu] | mortonX[(x >> 16) & 0xFFu];
+	morton = morton << 48 | mortonZ[(z >> 8) & 0xFFu] | mortonY[(y >> 8) & 0xFFu] | mortonX[(x >> 8) & 0xFFu];
+	morton = morton << 24 | mortonZ[z & 0xFFu] | mortonY[y & 0xFFu] | mortonX[x & 0xFFu];
+	return morton;
 }
 
-void voxelDwordGet(out uint voxel, uint x, uint y, uint z) {
-  uint mortonIdx;
-  morton32(mortonIdx, x, y, z);
-  mortonVoxelDword(voxel, mortonIdx);
+vec3 voxel(vec3 pos) {
+	pos *= 16 ;
+	uint pack = floatBitsToUint(buf[0][morton32(uint(pos.x), uint(pos.y), uint(pos.z))]);
+	uvec3 uColor = uvec3(pack & 0xFFu, pack >> 8u & 0xFFu, pack >> 16u & 0xFFu);
+	return vec3(uColor) / 255.0;
 }
-float vdGetRed(uint voxel) { return float((voxel & 0x1C00u) >> 10u) / 7.0; }
-float vdGetGreen(uint voxel) { return float((voxel & 0xE000u) >> 13u) / 7.0; }
-float vdGetBlue(uint voxel) { return float((voxel & 0x70000u) >> 16u) / 7.0; }
+
+// Ray-box intersection.
+vec2 box(vec3 ro, vec3 rd, vec3 p0, vec3 p1) {
+	vec3 t0 = (mix(p1, p0, step(0., rd * sign(p1 - p0))) - ro) / rd;
+	vec3 t1 = (mix(p0, p1, step(0., rd * sign(p1 - p0))) - ro) / rd;
+	return vec2(max(t0.x, max(t0.y, t0.z)), min(t1.x, min(t1.y, t1.z)));
+}
+
+// Box surface normal.
+vec3 boxNormal(vec3 rp, vec3 p0, vec3 p1) {
+	rp = rp - (p0 + p1) / 2.;
+	vec3 arp = abs(rp) / (p1 - p0);
+	return step(arp.yzx, arp) * step(arp.zxy, arp) * sign(rp);
+}
+
+/*
+float traceFirst(vec3 ro, vec3 rd, inout vec3 outn, inout float id) {
+	vec2 ob = box(ro, rd, vec3(-1), vec3(1)); // Scene AABB.
+	if (ob.y < ob.x || ob.x < 0.) { return -1.0; }
+	
+	float tt = max(0., ob.x);
+	vec3 n = vec3(0, 1, 0);
+	
+	for (int j = 0; j < 64; ++j) { // March through the octree, one leaf node per step.
+		if (tt > ob.y - 1e-5) { break; }
+		vec3 p2 = ro + rd * tt;
+		vec3 p = p2 + sign(rd) * 1e-4;
+		vec3 p0 = vec3(-1), p1 = vec3(+1);
+		id = 0.;
+		for (int i = 0; i < 4; ++i) { // Traverse the octree from root, to classify the current march point.
+			vec3 c = p0 + (p1 - p0) * (.5 + vec3(.4, .4, .4) * cos(id * vec3(1, 2, 3))); // Get centre point of node in world.
+			if (i < 2) { c = p0 + (p1 - p0) * .5; }
+			vec3 o = step(c, p); // Classify the point within this node.			
+			id = id * 8. + dot(o, vec3(1, 2, 4)); // Concatenate the relative child index.
+			p0 = p0 + (c - p0) * o;
+			p1 = p1 + (c - p1) * (vec3(1) - o);
+		}
+		if (cos(id) < -.7) { // Test the leaf node for solidity.
+			n = (p2 - (p0 + p1) / 2.) / (p1 - p0);
+			break;
+		}
+		vec2 b = box(ro, rd, p0, p1);
+		tt = b.y;
+	}
+	
+	// Get a 'bevelled' normal.
+	outn = normalize(pow(abs(n), vec3(16)) * sign(n));
+	
+	return tt;
+}*/
+
+float traceFirst(vec3 ro, vec3 rd, inout vec3 outc, inout vec3 outn, inout float species) {
+	vec2 ob = box(ro, rd, vec3(-1), vec3(1)); // Scene AABB.
+	if (ob.y < ob.x || ob.x < 0.) { return -1.0; }
+	
+	float tt = max(0., ob.x);
+	vec3 n = vec3(0, 1, 0);
+	
+	for (int j = 0; j < 64; ++j) { // March through the octree, one leaf node per step.
+		if (tt > ob.y - 1e-5) { break; }
+		vec3 p2 = ro + rd * tt;
+		vec3 p = p2 + sign(rd) * 1e-4;
+		vec3 p0 = vec3(-1), p1 = vec3(+1);
+		species = 0.;
+		vec3 center = vec3(0.0);
+		for (int level = 0; level < 4; ++level) { // Traverse the octree from root, to classify the current march point.
+			center = p0 + (p1 - p0) * .5;
+//			if (level < 2) { center = p0 + (p1 - p0) * .5; }
+			vec3 o = step(center, p); // Classify the point within this node.			
+			species = species * 8. + dot(o, vec3(1.112112112, .833333, .77979797)); // Concatenate the relative child index.
+			p0 = p0 + (center - p0) * o;
+			p1 = p1 + (center - p1) * (vec3(1) - o);
+		}
+//		if (cos(species) < -.7) { // Test the leaf node for solidity.
+		if (length(center) > 1.2) { // Test the leaf node for solidity.
+//		if (voxel(c).r > 2) { // Test the leaf node for solidity.
+			outc = voxel(center);
+			n = (p2 - (p0 + p1) / 2.) / (p1 - p0);
+			break;
+		}
+		vec2 b = box(ro, rd, p0, p1);
+		tt = b.y;
+	}
+	
+	// Get a 'bevelled' normal.
+	outn = normalize(pow(abs(n), vec3(16)) * sign(n));
+	
+	return tt;
+}
+
+float rnd(vec4 v) { return fract(4e4*sin(dot(v, vec4(13.46, 41.74, -73.36, 14.24))+17.34)); }
+
+vec2 rotate2d(vec2 v, float a) {
+	float sinA = sin(a);
+	float cosA = cos(a);
+	return vec2(v.x * cosA - v.y * sinA, v.y * cosA + v.x * sinA);
+}
 
 void main() {
-  uint x = uint(gl_FragCoord.x / 16);
-  uint y = uint(gl_FragCoord.y / 16);
-  uint z = uint(gl_FragCoord.z);
-  
-  uint voxel;
-  voxelDwordGet(voxel, x, y, z);
-  
-  fsOut = vec4(vdGetRed(voxel), vdGetGreen(voxel), vdGetBlue(voxel), 1.0);
+	vec2 uv = gl_FragCoord.xy / resIn.xy * 2. - 1.; // Normalized pixel coordinates (from -1 to +1)
+	uv.x *= resIn.x / resIn.y; // Aspect correction.
+	vec3 rOgn = vec3(0, 0, 4.), rDir = normalize(vec3(uv, -2.)); // Primary ray.
+	
+	vec2 rDirRot = rotate2d(rDir.xz, timeIn);
+	rDir = vec3(rDirRot.x, rDir.y, rDirRot.y);
+	vec2 rOgnRot = rotate2d(rOgn.xz, timeIn);
+	rOgn = vec3(rOgnRot.x, rOgn.y, rOgnRot.y);
+	
+	vec2 bounds = box(rOgn, rDir, vec3(-1), vec3(1)); // Scene AABB.
+	fsOut.rgb = vec3(.025); // background color
+	float species = 0.;
+	vec3 voxColr = vec3(0, 1, 0); // debug green
+	vec3 pixNorm = vec3(0, 1, 0);
+	float tt = traceFirst(rOgn, rDir, voxColr, pixNorm, species);
+	float pt = (-1. - rOgn.y) / rDir.y;
+	vec3 lightDir = normalize(vec3(1, 3, 1));
+	
+	if (bounds.y < bounds.x || tt >= bounds.y - 1e-5) { // transparent-to-background-ness
+		tt = pt;
+		species = -1.;
+//		fsOut.rgb *= smoothstep(0., 2., length((ro + rd * tt).xz)); // floor shadow
+	}
+	
+	vec3 rp = rOgn + rDir * tt;
+	//	vec3 r = reflect(rd, n);
+	if (species >= 0. && bounds.x < bounds.y) {
+		fsOut.rgb = vec3(.5 + .5 * dot(lightDir, pixNorm));
+		fsOut.rgb += pow(.5 + .5 * pixNorm.y, 2.) / 3.;
+		if (species < 0.) { // Floor.
+			fsOut.rgb *= .5;
+		} else { // Cuboid.
+//			fsOut.rgb *= mix(mix(vec3(1, .25, .25), vec3(.25, .25, .25), .5 + .5 * cos(id * 223.32)),
+//									 vec3(.6), pow(.5 + .5 * cos(id * 19.), 4.));
+			
+			fsOut.rgb *= voxColr;
+		}
+		//		fsOut.rgb *= pow(smoothstep(-.5, 1.4, length(rp)), 2.); // center shadow
+	}
+	// Gamma.
+	fsOut.rgb = pow(fsOut.rgb, vec3(1./2.2));
 }
