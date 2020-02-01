@@ -128,7 +128,7 @@ namespace tvx
 			entity=0;
 		}
 	};
-	
+
 	/*
 					SYSTEM:
 		An abstract class.
@@ -146,7 +146,7 @@ namespace tvx
 	};
 
 
-	/* 
+	/*
 					SCENE:
 		Has the handlers that handle all
 		systems, components, entities.
@@ -160,14 +160,14 @@ namespace tvx
 	{
 	public:
 
-		ComponentHandler* component_handler = nullptr;	
+		ComponentHandler* component_handler = nullptr;
 		EntityHandler* entity_handler = nullptr;
 
 		explicit Scene(const string &title) noexcept
 		{
 			name = title;
 		}
-		
+
 		~Scene() = default;
 
 		inline std::string get_title()

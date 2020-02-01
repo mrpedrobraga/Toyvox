@@ -1,51 +1,26 @@
-#include <iostream>
-#include "tvxutil.h"
+#include "tvxcore.h"
 
-SDL_Window* window;
-SDL_GLContext glcontext;
-SDL_Event event;
+using namespace tvx;
 
-bool quit = false;
+KeyMap keys = KeyMap();
+std::shared_ptr<Scene> scene;
 
-int main (int argc, char** argv) {
+void key_press(SDL_Event& e, Scene& s) {
+	if(keys.is_action(game::get_key(e), "Close")) game::stop();
+}
 
-	SDL_Init(SDL_INIT_EVERYTHING);
+int main(int argc, char* argv[]) {
 
-	SDL_GL_LoadLibrary(NULL);
+	scene = std::make_shared<Scene>("My Scene");
 
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+	keys.add("Close", SDLK_UP);
 
-	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+	game::set_title("My Toyvox Game");
+	game::set_resolution(640, 360);
 
-	window = SDL_CreateWindow("Toyvox Game",
-														SDL_WINDOWPOS_UNDEFINED,
-														SDL_WINDOWPOS_UNDEFINED,
-														960,
-														540,
-														SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-	glcontext = SDL_GL_CreateContext(window);
+	game::set_current_scene(scene);
 
-	gladLoadGLLoader(SDL_GL_GetProcAddress);
+	game::launch(SDL_WINDOW_RESIZABLE);
 
-	SDL_GL_SetSwapInterval(1);
-
-	while (!quit) {
-	  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glClearColor(0.1f, 0.3f, 0.8f, 1.5f);
-	  SDL_GL_SwapWindow(window);
-		while(SDL_PollEvent(&event))
-		{
-			if(event.type == SDL_QUIT) quit = true;
-			if(event.type == SDL_KEYDOWN)
-				switch(event.key.keysym.sym) {
-					case SDLK_ESCAPE:
-						quit = true;
-						break;
-				}
-		}
-	}
-
-	SDL_Quit();
+  return 0;
 }
