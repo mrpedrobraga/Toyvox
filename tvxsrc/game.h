@@ -19,11 +19,12 @@ namespace tvx {
 		private:
 
 			std::shared_ptr<Scene> current_scene;
-			std::string game_title = "Game";
+			std::string game_title = strdup("Game");
 			glm::ivec2 resolution;
-			std::shared_ptr<Display> display; // FIX APPLIED: ptr to avoid accidental (de-)constructor calls
+			Display display;
 			bool should_stop = false;
-			
+
+			SDL_Event event = {};
 		public:
 			Scene &get_current_scene() const { return *current_scene; }
 			void set_current_scene(const std::shared_ptr<Scene> &new_scene) {
@@ -34,22 +35,24 @@ namespace tvx {
 				}
 			}
 
-			Display const &get_current_display() { return *display; }
-			void set_current_display(const std::shared_ptr<Display> &new_display) {
+			Display &get_current_display() { return display; }
+			void set_current_display(const Display &new_display) {
 				display = new_display;
 			}
-			
+
+
 			std::string get_title() const { return game_title; }
 			void set_title(std::string title) { game_title = std::move(title); }
 
-			glm::ivec2 get_resolution() const { return display->resolution; }
-			void set_resolution(glm::ivec2 res) { resolution = res; display->resolution = res; }
-			void set_resolution(int x, int y) { resolution = glm::ivec2(x, y); display->resolution = glm::ivec2(x, y); }
+			glm::ivec2 get_resolution() const { return display.resolution; }
+			void set_resolution(glm::ivec2 res) { resolution = res; display.resolution = res; }
+			void set_resolution(int x, int y) { resolution = glm::ivec2(x, y); display.resolution = glm::ivec2(x, y); }
 
 			Game():
 				resolution(640, 360)
 			{
-				display = std::make_shared<Display>(game_title.c_str(), resolution);
+				display = Display(game_title, resolution, SDL_WINDOW_RESIZABLE);
+				SDL_Init(SDL_INIT_EVERYTHING);	
 			}
 
 			~Game() {
@@ -60,14 +63,11 @@ namespace tvx {
 			void run() {
 				
 				while (!should_stop) { // main loop
-
-					if (display) { display->draw(); }
 					
 					if (!current_scene) {
 						return;
 					}
 					
-					SDL_Event event;
 					while (SDL_PollEvent(&event)) { // poll each frame
 
 						switch (event.type) { //Handle events
