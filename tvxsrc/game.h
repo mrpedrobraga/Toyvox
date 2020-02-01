@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tvxutil.h"
+#include "tvx_glutil.h"
 #include "events.h"
 #include "objects.h"
 
@@ -63,20 +64,28 @@ namespace tvx::game {
 
 	void draw()
 	{
+
+		GLuint program = LoadShaders("native-extensions/iris-renderer/main.vert", "native-extensions/iris-renderer/main.frag");
+
 		while(!should_stop)
 		{
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			glClearColor(0.1f, 0.3f, 0.8f, 1.5f);
 		  SDL_GL_SwapWindow(window);
 
-			int x, y;
-			SDL_GetWindowPosition(window, &x, &y);
-			SDL_SetWindowPosition(window, x+10 * (float)framedelay/1000, y);
+			if(current_scene->every_tick) current_scene->every_tick(0.0, *current_scene);
 
 			SDL_Delay(framedelay);
 
 			while(SDL_PollEvent(&event)) {
-				if(event.type == SDL_QUIT) stop();
+				switch (event.type) {
+					case SDL_QUIT:
+						stop();
+						break;
+					default:
+						if(current_scene->on_event) current_scene->on_event(event, *current_scene);
+						break;
+				}
 			}
 		}
 

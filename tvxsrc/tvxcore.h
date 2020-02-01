@@ -11,3 +11,5 @@
 #include "events.h"
 #include "game.h"
 #include "tvxutil.h"
+
+#define IRIS_RENDERER
