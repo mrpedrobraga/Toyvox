@@ -1,3 +1,5 @@
+//#version 330 core
+
 #define MAX_STEPS 500
 #define MIN_STEP 0.01
 
@@ -21,8 +23,8 @@ mat4 rotationMatrix(vec3 axis, float angle)
 vec3 rotate3d(vec3 vector, vec3 rotations) {
 
   mat4 rx = rotationMatrix(vec3(1.0, 0.0, 0.0), rotations.x);
-  mat4 ry = rotationMatrix(vec3(0.0, 1.0, 0.0), rotations.y);
-  mat4 rz = rotationMatrix(vec3(0.0, 0.0, 1.0), rotations.z);
+  mat4 ry = rotationMatrix(vec3(0.0, -1.0, 0.0), rotations.y);
+  mat4 rz = rotationMatrix(vec3(0.0, 0.0, -1.0), rotations.z);
 
   return (rz * ry * rx * vec4(vector, 1.0)).xyz;
 }
@@ -30,7 +32,7 @@ vec3 rotate3d(vec3 vector, vec3 rotations) {
 vec4 spheresdf(vec3 p, vec3 scenter, float radius) {
 
   vec4 r;
-  vec3 point = rotate3d(p-scenter, vec3(0.0, 0.785, 0.3))+scenter;
+  vec3 point = rotate3d(p-scenter, vec3(0.0, 0.0, 0.0))+scenter;
 
   float cd = abs(point.x-scenter.x)-radius;
   cd = max(cd, abs(point.y-scenter.y)-radius);

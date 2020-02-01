@@ -1,9 +1,9 @@
 
 message( "> tvxsrc:" )
 
-set( TARGET_NAME ${TARGET_PREFIX}_module )
+#set( TARGET_NAME ${TARGET_PREFIX}_module )
 
-add_subdirectory( modules ) # Targets built in here will have names starting with ${TARGET_PREFIX}_module
+#add_subdirectory( modules ) # Targets built in here will have names starting with ${TARGET_PREFIX}_module
 
 set( TARGET_NAME ${TARGET_PREFIX}_game )
 
