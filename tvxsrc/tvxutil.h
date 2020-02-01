@@ -4,7 +4,9 @@
 #include <cassert>
 #include <cstring>
 
+#include <fstream>
 #include <iostream>
+#include <sstream>
 #include <memory>
 #include <type_traits>
 #include <typeinfo>
@@ -15,10 +17,12 @@
 #include <algorithm>
 #include <unordered_map>
 #include <string>
+#include <vector>
 
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <glad/glad.h>
+#include <SDL_opengl.h>
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL

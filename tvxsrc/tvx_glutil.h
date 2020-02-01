@@ -1,6 +1,6 @@
-#include "SDL_opengl.h"
+
 #include "tvxutil.h"
-#include <fstream>
+
 
 GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path){
 
