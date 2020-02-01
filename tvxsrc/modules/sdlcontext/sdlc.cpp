@@ -122,9 +122,9 @@ namespace tvx {
 			SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "Unable to set vertical sync to desired mode.\n");
 		}
 
-		// Enable depth test and face culling.
-		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_LESS);
+		// Depth test and face culling.
+		// glEnable(GL_DEPTH_TEST);
+		// glDepthFunc(GL_LESS);
 		glEnable(GL_CULL_FACE);
 
 		// Get whatever window size ended up being and setup viewport
@@ -168,7 +168,7 @@ namespace tvx {
 					break;
 				case SDL_KEYDOWN: {
 					switch (event.key.keysym.sym) { // Make escape toggle between captured mouse and free mouse
-						case SDLK_ESCAPE: {
+						case SDLK_RETURN: {
 							if (SDL_GetWindowGrab(window)) {  // window is currently grabbed - ungrab.
 								SDL_SetWindowGrab(window, SDL_FALSE);
 								SDL_SetRelativeMouseMode(SDL_FALSE);
@@ -180,7 +180,12 @@ namespace tvx {
 							}
 						} break;
 						PUB_KEYD(space, SDLK_SPACE)
-						PUB_KEYD(del, SDLK_DELETE)
+						PUB_KEYD(escape, SDLK_ESCAPE)
+						PUB_KEYD(w, SDLK_w)
+						PUB_KEYD(a, SDLK_a)
+						PUB_KEYD(s, SDLK_s)
+						PUB_KEYD(d, SDLK_d)
+						PUB_KEYD(c, SDLK_c)
 						default: break;
 					}
 				} break;
@@ -210,7 +215,6 @@ namespace tvx {
 							// placeholder
 						} break;
 						case SDL_WINDOWEVENT_MOVED: {
-							publish("window_moved");
 							// placeholder
 						} break;
 						case SDL_WINDOWEVENT_MAXIMIZED: {
@@ -220,7 +224,6 @@ namespace tvx {
 							// placeholder
 						} break;
 						case SDL_WINDOWEVENT_ENTER: {
-							publish("window_entered");
 						} break;
 						default: break;
 					} break;
@@ -245,6 +248,7 @@ namespace tvx {
 		  PUB_KEYH(s, SDL_SCANCODE_S)
 		  PUB_KEYH(d, SDL_SCANCODE_D)
 		  PUB_KEYH(space, SDL_SCANCODE_SPACE)
+		  PUB_KEYH(space, SDL_SCANCODE_C)
 	
 		  // and current mouse state
 		  const uint32_t mouseState = SDL_GetMouseState(nullptr, nullptr);

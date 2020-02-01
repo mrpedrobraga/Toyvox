@@ -4,6 +4,9 @@
 layout (location = 0) in vec2 resIn;
 layout (location = 1) in float timeIn;
 layout (location = 2) in float dtIn;
+layout (location = 3) in vec4 camPos;
+layout (location = 4) in vec4 camRot;
+
 layout (location = 0) out vec4 fsOut;
 
 layout (std140, binding = 0) uniform shader_data {
@@ -101,12 +104,16 @@ float vdGetGreen(uint voxel) { return float((voxel & 0xE000u) >> 13u) / 7.0; }
 float vdGetBlue(uint voxel) { return float((voxel & 0x70000u) >> 16u) / 7.0; }
 
 void main() {
-  uint x = uint(gl_FragCoord.x / 16);
-  uint y = uint(gl_FragCoord.y / 16);
+  float scaleToFitWindowVertically = (32.0 / resIn.x);
+  uint x = uint(gl_FragCoord.x * scaleToFitWindowVertically);
+  uint y = uint(gl_FragCoord.y * scaleToFitWindowVertically);
   uint z = uint(gl_FragCoord.z);
   
   uint voxel;
   voxelDwordGet(voxel, x, y, z);
   
   fsOut = vec4(vdGetRed(voxel), vdGetGreen(voxel), vdGetBlue(voxel), 1.0);
+  
+  // Gamma.
+//  fsOut.rgb = pow(fsOut.rgb, vec3(1./2.2));
 }
