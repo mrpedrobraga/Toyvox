@@ -23,6 +23,7 @@ bld/
 [Bb]in/
 [Oo]bj/
 [Ll]og/
+modules/
 
 #Henri's Toybox
 henritoybox/
