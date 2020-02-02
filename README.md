@@ -5,13 +5,13 @@ Toyvox goes against the predominant way of making 3d games, that we are all used
 Toyvox is a flat-shaded voxel engine, that's easy and simple to use, and yet, very powerful.
 It is a *C++* library that uses OPENGL to render, so you can import it and use it on your favourite IDE. Or, idk, compile with your favourite cmd compiler, too.
 
-It's renderer is basically of a 2D engine, but in 3D.
+It's default renderer (Iris Render) is basically of a 2D engine, but in 3D.
 
 The flat shaded approach is very rare for now, and it's kinda of misunterstood.
 The idea of flat shading is: voxels are elementary. So they can only hold one color.
 
-Most of the current voxel engines render the voxels as cubes, with different faces' normals, rendering with polygons.
-Toyvox renders 3d models *without* any polygons at all.
+Most of the current voxel engines render the voxels as cubes with different colors for each face, or even with with polygons.
+Toyvox renders 3d models *without* any polygons at all, each voxel holding a single normal.
 
 Some examples I can point to:
 

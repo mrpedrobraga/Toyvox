@@ -1,11 +1,5 @@
 #pragma once
 
-#define SDL_MAIN_HANDLED
-#include "SDL.h"
-#include <stdio.h>
-#include <map>
-#include <algorithm>
-#include <string.h>
 #include "any.h"
 
 using namespace std;
@@ -134,7 +128,7 @@ namespace tvx
 			entity=0;
 		}
 	};
-	
+
 	/*
 					SYSTEM:
 		An abstract class.
@@ -152,7 +146,7 @@ namespace tvx
 	};
 
 
-	/* 
+	/*
 					SCENE:
 		Has the handlers that handle all
 		systems, components, entities.
@@ -166,16 +160,15 @@ namespace tvx
 	{
 	public:
 
-		ComponentHandler* component_handler;	
-		EntityHandler* entity_handler;
+		ComponentHandler* component_handler = nullptr;
+		EntityHandler* entity_handler = nullptr;
 
-		Scene(std::string title)
+		explicit Scene(const string &title) noexcept
 		{
 			name = title;
 		}
-		
-		~Scene()
-		{}
+
+		~Scene() = default;
 
 		inline std::string get_title()
 		{
@@ -205,11 +198,11 @@ namespace tvx
 
 		/* Be sure to implement these functions whenever you create a new scene,
 		or assign them to an existing function!!! */
-		void (*on_load)(Scene&)=0;
-		void (*every_tick)(float, Scene&)=0;
-		void (*on_key_pressed)(SDL_Event&, Scene&)=0;
-		void (*on_key_released)(SDL_Event&, Scene&)=0;
-		void (*on_event)(SDL_Event&, Scene&)=0;
+		void (*on_load)(Scene&) = nullptr;
+		void (*every_tick)(float, Scene&) = nullptr;
+		void (*on_key_pressed)(SDL_Event&, Scene&) = nullptr;
+		void (*on_key_released)(SDL_Event&, Scene&) = nullptr;
+		void (*on_event)(SDL_Event&, Scene&) = nullptr;
 	private:
 		std::string name;
 	};

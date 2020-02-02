@@ -6,6 +6,8 @@
 *.user
 *.userosscache
 *.sln.docstates
+*.cmd
+*.cson
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -21,6 +23,9 @@ bld/
 [Bb]in/
 [Oo]bj/
 [Ll]og/
+
+#Henri's Toybox
+henritoybox/
 
 # Visual Studio 2015 cache/options directory
 .vs/
@@ -69,6 +74,7 @@ artifacts/
 *.pidb
 *.svclog
 *.scc
+*.ini
 
 # Chutzpah Test files
 _Chutzpah*
@@ -315,3 +321,6 @@ out/
 *.skb
 *.cbp
 *.layout
+
+# Thanks Micro$haft
+desktop.ini

@@ -1,7 +1,5 @@
 #include "components.h"
 #include "game.h"
-#include <glm/glm.hpp>
-#include <string>
 #include "voxel_objects.h"
 
 /* Usage:

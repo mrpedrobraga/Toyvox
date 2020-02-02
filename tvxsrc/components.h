@@ -1,7 +1,6 @@
 #pragma once
-#include <math.h>
+#include "tvxutil.h"
 #include "objects.h"
-#include <string.h>
 
 /* Some default components and component sets! */
 
@@ -46,9 +45,14 @@ namespace tvx
 
 	};
 
+	enum CameraType {
+		TVX_PERSPECTIVE_CAMERA,
+		TVX_ORTOGRAPHIC_CAMERA,
+		TVX_2D_CAMERA,
+	};
 
 	//This class hold many components on a list!
-	template <class Type>
+	template<class Type>
 	struct ComponentSet //Also densely packed! See EntityHandler to see how this works!
 	{
 	private:
