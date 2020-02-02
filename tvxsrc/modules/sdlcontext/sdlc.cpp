@@ -122,14 +122,17 @@ namespace tvx {
 			SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "Unable to set vertical sync to desired mode.\n");
 		}
 
-		// Depth test and face culling.
-		// glEnable(GL_DEPTH_TEST);
-		// glDepthFunc(GL_LESS);
-		glEnable(GL_CULL_FACE);
+		// Depth test and face culling not needed for full-screen triangle rendering
+		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_CULL_FACE);
 
 		// Get whatever window size ended up being and setup viewport
 		SDL_GetWindowSize(window, &windowWidth, &windowHeight);
 		glViewport(0, 0, windowWidth, windowHeight);
+		
+		// Start with the window grabbed
+		SDL_SetWindowGrab(window, SDL_TRUE);
+		SDL_SetRelativeMouseMode(SDL_TRUE);
 
 		// Initialize the timer
 		lastTime = SDL_GetPerformanceCounter();

@@ -117,6 +117,7 @@ void voxelDwordGet(out uint voxel, uint x, uint y, uint z) {
 	morton32(mortonIdx, x, y, z);
 	mortonVoxelDword(voxel, mortonIdx);
 }
+bool vdGetIsFilled(uint voxel) { return bool(voxel & 0x100u); }
 float vdGetRed(uint voxel) { return float((voxel & 0x1C00u) >> 10u) / 7.0; }
 float vdGetGreen(uint voxel) { return float((voxel & 0xE000u) >> 13u) / 7.0; }
 float vdGetBlue(uint voxel) { return float((voxel & 0x70000u) >> 16u) / 7.0; }
@@ -139,6 +140,15 @@ int getvoxel(vec3 p, float size) { // 0 empty, 1 subdivide, 2 full
 	} else {
 		return cube_brick;
 	}
+}
+
+uint fetchVoxel(vec3 p, float size) {
+	uvec3 pos = uvec3(p);
+	uint voxel;
+	voxelDwordGet(voxel, pos.x, pos.y, pos.z);
+	bool isFilled = vdGetIsFilled(voxel);
+	if (isFilled) { return 2; }
+	return 0;
 }
 
 float getkey(int x, int y)
@@ -200,6 +210,7 @@ vec4 octreeray(vec3 ro, vec3 rd, float maxdist, float e) {
 		
 		if (recursions1 == recursions) {
 			voxelstate1 = getvoxel(fro, size);
+//			voxelstate1 = int(fetchVoxel(fro, size));
 		}
 		
 		bool isnothing = recursions0 < recursions || voxelstate == cube_nothing;
