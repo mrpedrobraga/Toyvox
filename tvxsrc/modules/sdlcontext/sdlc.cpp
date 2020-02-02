@@ -248,7 +248,7 @@ namespace tvx {
 		  PUB_KEYH(s, SDL_SCANCODE_S)
 		  PUB_KEYH(d, SDL_SCANCODE_D)
 		  PUB_KEYH(space, SDL_SCANCODE_SPACE)
-		  PUB_KEYH(space, SDL_SCANCODE_C)
+		  PUB_KEYH(c, SDL_SCANCODE_C)
 	
 		  // and current mouse state
 		  const uint32_t mouseState = SDL_GetMouseState(nullptr, nullptr);

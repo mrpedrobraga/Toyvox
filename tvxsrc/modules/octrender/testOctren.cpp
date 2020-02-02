@@ -10,11 +10,11 @@ using namespace tvx;
 
 static constexpr uint64_t voxelBufSize = 65536; // Minimum spec UBO size
 static constexpr int voxelBufType = GL_UNIFORM_BUFFER;
-static constexpr uint64_t unifBufSize = 256;
+static constexpr uint64_t unifBufSize = 512;
 static constexpr int unifBufType = GL_UNIFORM_BUFFER;
 static const char *vert = "cover.vert";
-static const char *fragGen = "stoct0.frag";
-static const char *fragDisp = "stoct1.frag";
+static const char *fragGen = "cool.frag";
+static const char *fragDisp = "cooler.frag";
 
 int main(int argc, char **argv) {
 	SdlContext sdlc("Toyvox Octree Rendering Test");
@@ -29,9 +29,10 @@ int main(int argc, char **argv) {
 	ScreenCoveringTriangle tri;
 	GeneralBuffer<voxelBufSize, voxelBufType> voxels(0);
 	GeneralBuffer<unifBufSize, unifBufType> globals(1);
-	IntermediateTexture<GL_RGBA, GL_FLOAT, GL_LINEAR> dataTex(sdlc.getWindowWidth(), sdlc.getWindowHeight());
+	IntermediateTexture<GL_RGBA, GL_FLOAT, GL_LINEAR> dataTex(512, 512);
 	
-	FreeCamera cam(glm::vec3(0, 0, 0));
+	FreeCamera cam(glm::vec3(0.1, 0.1, 0.1));
+	cam.setAspect(static_cast<float>(sdlc.getWindowWidth()) / static_cast<float>(sdlc.getWindowHeight()));
 	
 	float time = 0.f;
 	while (sdlc.pollEvents(isQuitRequested)) {
@@ -57,10 +58,12 @@ int main(int argc, char **argv) {
 		}
 		voxels.sendToGpu();
 		
-		globals.writeToCpu<glm::vec4>(0, glm::vec4(sdlc.getWindowWidth(), sdlc.getWindowHeight(), time, dt));
-		globals.writeToCpu<glm::vec4>(1, glm::vec4(cam.getPos(), 1.f));
-		globals.writeToCpu<glm::vec4>(2, glm::vec4(cam.getRot(), 0.f));
-		globals.writeToCpu<glm::vec4>(4, glm::vec4());
+		glm::mat4 uniformPackage;
+		uniformPackage[0] = glm::vec4(sdlc.getWindowWidth(), sdlc.getWindowHeight(), time, dt);
+		uniformPackage[1] = cam.getPos();
+		uniformPackage[2] = cam.getRot();
+		uniformPackage[3] = cam.getCtrl();
+		globals.writeToCpu<glm::mat4>(0, uniformPackage);
 		globals.sendToGpu();
 
 		
@@ -70,7 +73,7 @@ int main(int argc, char **argv) {
 		glUseProgram(shaderGen);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 		
-		dataTex.setToRead();
+		dataTex.setToRead(sdlc.getWindowWidth(), sdlc.getWindowHeight());
 		glUseProgram(shaderDisp);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 		
@@ -79,6 +82,7 @@ int main(int argc, char **argv) {
 		
 		
 		sdlc.swapWindow();
+		cam.refresh(dt);
 	}
 	return 0;
 }

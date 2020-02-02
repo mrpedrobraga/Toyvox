@@ -8,32 +8,18 @@ layout (location = 1) in float timeIn;
 layout (location = 2) in float dtIn;
 layout (location = 3) in vec4 camPosIn;
 layout (location = 4) in vec4 camRotIn;
+layout (location = 5) in vec4 controlsIn;
 layout (location = 0) out vec4 fsOut;
 layout (binding = 0) uniform sampler2D dataTex;
 
 
-//uncomment to add some spheres you can mess with
-#define raymarching
-
-//the editor starts with octree lvl 8 (or startdetail) when you refresh
-#define startdetail 8
-//limit octree level to 20 (or maxdetail) and 1 (or mindetail)
-#define maxdetail 20
-#define mindetail 1
-#define debrisdetail 20
-//octree iterations before the ray gives up, gets really goofy on low numbers
+#define debrisdetail 10
 #define steps 1000
 #define ambient 0.2
 
-#define emptycells 0.5
+#define emptycells 0.4
 #define subdivisions 0.90//should be higher than emptycells
 
-
-#define counter 0
-#define lastmouse 1
-#define campos 2
-#define camrot 3
-#define clickray 4
 #define detaildata 5
 #define datapixels 6
 
@@ -44,20 +30,8 @@ layout (binding = 0) uniform sampler2D dataTex;
 
 #define epsilon max(0.001*exp(-float(detail)), 0.0000001)
 
-#define sensitivity 3.0
-#define movespeed (3.0*exp2(float(-detail)))
 
-//random function from https://www.shadertoy.com/view/MlsXDf
 float rnd(vec4 v) { return fract(4e4*sin(dot(v, vec4(13.46, 41.74, -73.36, 14.24))+17.34)); }
-	
-	//hash function by Dave_Hoskins https://www.shadertoy.com/view/4djSRW
-	#define HASHSCALE3 vec3(.1031, .1030, .0973)
-vec3 hash33(vec3 p3)
-{
-	p3 = fract(p3 * HASHSCALE3);
-	p3 += dot(p3, p3.yxz+19.19);
-	return fract((p3.xxy + p3.yxx)*p3.zyx);
-}
 
 //0 is empty, 1 is subdivide and 2 is full
 int getvoxel(vec3 p, float size) {
@@ -78,10 +52,6 @@ int getvoxel(vec3 p, float size) {
 	}
 }
 
-
-
-
-
 vec4 getdata(int index) {
 	ivec2 p;
 	p.x = index%int(resIn.x);
@@ -89,8 +59,7 @@ vec4 getdata(int index) {
 	return texelFetch(dataTex, p, 0);
 }
 
-vec3 voxel(vec3 ro, vec3 rd, float size)
-{
+vec3 voxel(vec3 ro, vec3 rd, float size) {
 	size *= 0.5;
 	
 	vec3 hit = -(sign(rd)*(ro-size)-size)/max(abs(rd), 0.001);
@@ -109,7 +78,8 @@ vec3 findnormal(vec3 p) {
 	return normalize(vec3(map(p+e.yxx), map(p+e.xyx), map(p+e.xxy))-map(p));
 }
 
-vec4 octreeray(vec3 ro, vec3 rd, float maxdist, float e) {
+vec4 octreeray(vec3 ro, vec3 rd, float maxdist, float e, inout float edge) {
+	edge = 1.0;
 	
 	float size = 0.5;
 	vec3 lro = mod(ro, size);
@@ -254,6 +224,10 @@ vec4 octreeray(vec3 ro, vec3 rd, float maxdist, float e) {
 		{
 			break;
 		}
+		if (controlsIn.z > 0.0) { // draw grid
+			vec3 q = abs(lro/size-0.5)*(1.0-lastmask);
+			edge = min(edge, -(max(max(q.x, q.y), q.z)-0.5)*2000.0*size);
+		}
 	}
 	return vec4(dist, -mask*sign(rd));
 }
@@ -268,10 +242,16 @@ void main()
 	rd.zy *= mat2(cos(camRotIn.y), -sin(camRotIn.y), sin(camRotIn.y), cos(camRotIn.y));
 	rd.zx *= mat2(cos(camRotIn.x), -sin(camRotIn.x), sin(camRotIn.x), cos(camRotIn.x));
 	
-	vec4 len = octreeray(camPosIn.xyz, rd, 4.0, epsilon);
+	float edge = 1.0;
+	vec4 len = octreeray(camPosIn.xyz, rd, 4.0, epsilon, edge);
 	vec3 ro = camPosIn.xyz+rd*len.x;
 	
-	vec3 p1 = ro*exp2(float(detail));
+	vec3 p1 = vec3(0);
+	if (controlsIn.z < 2) {
+		p1 = ro*exp2(float(detail)) * edge;
+	} else {
+		p1 = vec3(edge);
+	}
 	
 	bool voxel = len.yzw != vec3(0);
 	
@@ -279,43 +259,31 @@ void main()
 		len.yzw = findnormal(ro);
 	}
 	
-	//vec2 p1 = (ro.yz*len.y+ro.xz*len.z+ro.xy*len.w)*exp2(float(detail));
-	
-	fsOut.xyz = vec3(0.5, 0.4, 0.6);
+	fsOut.xyz = vec3(1.0, 0.6, 0.4);
 	fsOut *= fsOut;
 	
-	float a = mod(dot(floor(p1), vec3(1)), 2.0);
+	if (controlsIn.z > 1.0) {
+		float a = mod(dot(floor(p1), vec3(1)), 2.0);
+		fsOut = fsOut * a;
+	}
 	
-	p1 = abs(fract(p1)-0.5);
+	p1 = abs(fract(p1) - 0.5);
 	if (voxel) {
 		p1 = min(p1, p1.yzx);
 	}
 	float b = (1.0-max(max(p1.x, p1.y), p1.z)*2.0/(len.x*exp2(float(detail))*0.04+1.0));
-	fsOut = fsOut*b;
-	
-	
+	fsOut = fsOut * b;
 	
 	vec3 normal = len.yzw;
-	
-	vec3 lightpos = vec3(0.4);
+	vec3 lightpos = vec3(0.5, 0.3, 0.5);
 	vec3 lightdir = ro-lightpos;
 	float lightdist = length(lightdir);
 	lightdir /= lightdist;
+//	lightdir *= 4.0;
+	//	float shadow = float(octreeray(lightpos, lightdir, lightdist, epsilon).x>lightdist-epsilon);
+	//	fsOut *= max(dot(-lightdir, normal)*shadow, ambient);
+	fsOut *= max(dot(-lightdir, normal), ambient);
 	
-	float shadow = float(octreeray(lightpos, lightdir, lightdist, epsilon).x>lightdist-epsilon);
-	
-	fsOut *= max(dot(-lightdir, normal)*shadow, ambient);
-	
-	
-	//fsOut /= (len.x*len.x*exp2(float(detail+1))+1.0);
 	fsOut = sqrt(fsOut);
-	
-	
-	if (gl_FragCoord.x < 10.0) {
-		fsOut = vec4(0);
-		vec4 data = texelFetch(dataTex, ivec2(gl_FragCoord), 0);
-		if (data.x == -1.0) return;//fsOut = vec4(0);
-		fsOut = vec4(1.0);
-	}
-	
+	fsOut.rgb = pow(fsOut.rgb, vec3(1./2.2));
 }

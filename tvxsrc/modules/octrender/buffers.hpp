@@ -52,9 +52,9 @@ namespace tvx {
 				glBindFramebuffer(GL_FRAMEBUFFER, fb);
 				glViewport(0, 0, width, height);
 			}
-			void setToRead() {
+			void setToRead(uint_fast64_t w, uint_fast64_t h) {
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-				glViewport(0, 0, width, height);
+				glViewport(0, 0, w, h);
 			}
 	};
 	

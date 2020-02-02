@@ -7,12 +7,14 @@ layout (location = 1) out float timeOut;
 layout (location = 2) out float dtOut;
 layout (location = 3) out vec4 camPosOut;
 layout (location = 4) out vec4 camRotOut;
+layout (location = 5) out vec4 controlsOut;
 
 layout (std140, binding = 1) uniform global {
   vec4 pack;
   vec4 camPos;
   vec4 camRot;
-  vec4 reserved0;
+  vec4 controls;
+  
 };
 
 void main() {
@@ -21,5 +23,6 @@ void main() {
   dtOut = pack.w;
   camPosOut = camPos;
   camRotOut = camRot;
+  controlsOut = controls;
   gl_Position = vec4(inPos, 1.0);
 }
