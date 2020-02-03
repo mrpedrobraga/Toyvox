@@ -57,7 +57,7 @@ int main (int argc, char** argv) {
 
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -99,34 +99,38 @@ int main (int argc, char** argv) {
 	//SDL_SetWindowGrab(window, SDL_TRUE);
 	//SDL_SetRelativeMouseMode(SDL_TRUE);
 
-	const char* vertex = 		"#version 330 core\n"
-													"layout (location = 0) in vec3 vpos\n"
-													"void main(){\n"
-													"gl_Position = vec4(vpos, 1.0);"
-													"}";
-
-	const char* fragment = 	"#version 330 core\n"
-													"void main(){\n"
-													"gl_FragColor = vec4(0.2, 0.4, 0.8, 1.0);\n"
-													"}";
+	// const char* vertex = 		"#version 400 core\n"
+	// 												"layout (location = 0) in vec3 vpos;\n"
+	// 												"void main(){\n"
+	// 												"gl_Position = vec4(vpos, 1.0);\n"
+	// 												"}\n\0";
+	//
+	// const char* fragment = 	"#version 400 core\n"
+	//                         "out vec4 color;\n"
+	// 												"void main(){\n"
+	// 												"color = vec4(0.2, 0.4, 0.8, 1.0);\n"
+	// 												"}\n\0";
 
   //std::cout << vertex << "\n\n" << fragment << "\n\nThose are the shaders!\n"; fflush(stdout);
 
-	GLuint program = tvx::program_from_string(vertex, fragment);
+	// GLuint program = tvx::program_from_string(vertex, fragment);
+	
+	GLuint program = tvx::program_from_file
+				("native-extensions/iris-renderer/main.vert","native-extensions/iris-renderer/main.frag");
 
 	if (!program) { SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Couldn't compile shaders!!!\n"); fflush(stderr); }
 	glClearColor(0.2f, 0.4f, 0.8f, 1.0f);
-	//GLuint AO, BO;
-	//generate_points(AO, BO);
+	GLuint AO, BO;
+	generate_points(AO, BO);
 
 	while (!quit) {
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-				//glUseProgram(program);
-				//glBindVertexArray(AO);
-				//glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-				//glBindVertexArray(0);
-			  //glUseProgram(0);
+		glUseProgram(program);
+		glBindVertexArray(AO);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glBindVertexArray(0);
+	  glUseProgram(0);
 
 		SDL_GL_SwapWindow(window);
 
