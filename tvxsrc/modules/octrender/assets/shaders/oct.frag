@@ -72,10 +72,10 @@ const uint mortonZ[256] = {
 
 #define steps 1000
 #define datapixels 6
-#define cube_nothing 0
-#define cube_octree 1
-#define cube_empty 2
-#define cube_brick 3
+#define vox_nil 0
+#define vox_subd 1
+#define vox_empty 2
+#define vox_brick 3
 #define epsilon 0.001// decrease further for finer detail
 
 layout (std140, binding = 0) uniform shader_data {
@@ -89,7 +89,6 @@ layout (location = 4) in vec4 camRotIn;
 layout (location = 5) in vec4 controlsIn;
 layout (location = 0) out vec4 fsOut;
 layout (binding = 0) uniform sampler2D dataTex;
-
 
 void morton32(out uint morton, uint x, uint y, uint z){
 	morton = 0;
@@ -127,19 +126,12 @@ uint fetchVoxel(vec3 p, float size, inout uint voxel) {
 		uvec3 pos = uvec3(p * 16);
 		voxelDwordGet(voxel, pos.x, pos.y, pos.z);
 		if (vdGetIsFilled(voxel)) {
-			return cube_brick;
+			return vox_brick;
 		} else {
-			return cube_empty;
+			return vox_empty;
 		}
 	}
-	return cube_octree;
-}
-
-vec4 getdata(int index) {
-	ivec2 p;
-	p.x = index%int(resIn.x);
-	p.y = index/int(resIn.x);
-	return texelFetch(dataTex, p, 0);
+	return vox_subd;
 }
 
 vec3 voxelHit(vec3 ro, vec3 rd, float size) {
@@ -148,155 +140,90 @@ vec3 voxelHit(vec3 ro, vec3 rd, float size) {
 	return hit;
 }
 
-float map(vec3 p) {
-	p = mod(p, 0.1)-0.05;
-	return length(p)-0.02;
-}
-
-vec3 findnormal(vec3 p) {
-	vec2 e = vec2(0.0, 0.001);
-	return normalize(vec3(map(p+e.yxx), map(p+e.xyx), map(p+e.xxy))-map(p));
-}
-
-vec4 octreeray(vec3 ro, vec3 rd, float maxdist, float e, out float edge, inout uint voxel) {
-	edge = 1.0;
+vec4 rayMarch(vec3 raySrc, vec3 rayDir, float maxdist, float eps, out vec4 hitclass, inout uint voxel) {
+	hitclass = vec4(1.0);
 	
-	float childSize = 0.5;
-	vec3 roInChild = mod(ro, childSize);
-	vec3 roWhichChild = ro-roInChild;
-	vec3 mask = vec3(0);
-	vec3 lastmask = vec3(0);
-	bool exitoct = false;
-	int recursions = 0;
-	int recursions0 = 0;
-	int recursions1 = 0;
-	int voxelstate1;
-	float dist = 0.0;
-	int i;
-	int index = 0;
-	vec4 data;
-	vec3 invrd = 1.0/abs(rd);
-	vec3 hit = voxelHit(roInChild, rd, childSize);
+	float childSize = 0.5, dist = 0.0;
+	vec3 raySrcInSub = mod(raySrc, childSize), raySrcInCur = raySrc - raySrcInSub, dirs = vec3(0), prevDirs = vec3(0);
+	bool levelUp = false;
+	int recur = 0, recurr = 0, recurrr = 0, curVoxFound = 0;
 	
-	if (any(greaterThan(abs(ro-0.5), vec3(0.5)))) return vec4(0);
+	if (any(greaterThan(abs(raySrc-0.5), vec3(0.5)))) return vec4(0);
+	vec3 hit = voxelHit(raySrcInSub, rayDir, childSize);
 	
-	for (i = 0; i < steps; i++) {
+	for (int curStep = 0; curStep < steps; ++curStep) {
 		
-		if (dist > maxdist) break;
-		if (recursions0 == recursions) {
-			vec3 q = mod(floor(roWhichChild / childSize + 0.5) + 0.5, 2.0) - 0.5;
-			data = getdata(index * 8 + datapixels + int(dot(q, vec3(1, 2, 4)) + 0.5));
-		}
-		int voxelstate = int(data.w);
-		if (recursions1 == recursions) {
-			voxelstate1 = int(fetchVoxel(roWhichChild, childSize, voxel));
-		}
-		bool isnothing = recursions0 < recursions || voxelstate == cube_nothing;
-		if (isnothing) {
-			voxelstate = voxelstate1;
-		}
+		if (dist > maxdist) { break; }
+		if (recurr == recur) { vec3 q = mod(floor(raySrcInCur / childSize + 0.5) + 0.5, 2.0) - 0.5; }
+		int voxFound = 0;
+		if (recurrr == recur) { curVoxFound = int(fetchVoxel(raySrcInCur, childSize, voxel)); }
+		bool isNil = recurr < recur || voxFound == vox_nil;
+		if (isNil) { voxFound = curVoxFound; }
 		
-		if (exitoct) { // go up a level
+		if (levelUp) { // go up a level
 			
-			if (recursions0 == recursions) {
-				index = int(data.x);
-				recursions0--;
-			}
-			if (recursions1 == recursions) {
-				recursions1--;
-			}
-			vec3 newfro = floor(roWhichChild / childSize * 0.5 + 0.25) * childSize * 2.0;
-			roInChild += roWhichChild - newfro;
-			roWhichChild = newfro;
-			recursions--;
+			if (recurr == recur) { recurr--; }
+			if (recurrr == recur) { recurrr--; }
+			vec3 newfro = floor(raySrcInCur / childSize * 0.5 + 0.25) * childSize * 2.0;
+			raySrcInSub += raySrcInCur - newfro;
+			raySrcInCur = newfro;
+			recur--;
 			childSize *= 2.0;
-			hit = voxelHit(roInChild, rd, childSize);
-			if (recursions < 0) break;
-			exitoct = (abs(dot(mod(roWhichChild / childSize + 0.5, 2.0) - 1.0 + mask * sign(rd) * 0.5, mask)) < 0.1);
+			hit = voxelHit(raySrcInSub, rayDir, childSize);
+			if (recur < 0) break;
+			levelUp = (abs(dot(mod(raySrcInCur / childSize + 0.5, 2.0) - 1.0 + dirs * sign(rayDir) * 0.5, dirs)) < 0.1);
 			
-		} else if (voxelstate == cube_octree) { //subdivide
+		} else if (voxFound == vox_subd) { // subdivide
 			
-			recursions++;
-			if (!isnothing) {
-				index = int(data.y);
-				recursions0++;
-			}
-			if (voxelstate1 == cube_octree) {
-				recursions1++;
-			}
+			recur++;
+			if (!isNil) { recurr++; }
+			if (curVoxFound == vox_subd) { recurrr++; }
 			childSize *= 0.5;
-			vec3 mask2 = step(vec3(childSize), roInChild);// which of the 8 voxels to enter
-			roWhichChild += mask2 * childSize;
-			roInChild -= mask2 * childSize;
-			hit = voxelHit(roInChild, rd, childSize);
+			vec3 mask2 = step(vec3(childSize), raySrcInSub); // which of 8
+			raySrcInCur += mask2 * childSize;
+			raySrcInSub -= mask2 * childSize;
+			hit = voxelHit(raySrcInSub, rayDir, childSize);
 			
-		} else if (voxelstate == cube_nothing || voxelstate == cube_empty) { //move forward
+		} else if (voxFound == vox_nil || voxFound == vox_empty) { // forward
 			
-			if (hit.x < min(hit.y, hit.z)) { // raycast and find distance to nearest voxel surface in ray direction
-				mask = vec3(1, 0, 0);
-			} else if (hit.y < hit.z) {
-				mask = vec3(0, 1, 0);
-			} else {
-				mask = vec3(0, 0, 1);
-			}
-			float len = dot(hit, mask);
+			if (hit.x < min(hit.y, hit.z)) { dirs = vec3(1, 0, 0); }
+			else if (hit.y < hit.z) { dirs = vec3(0, 1, 0); }
+			else { dirs = vec3(0, 0, 1); }
+			float len = dot(hit, dirs);
 			hit -= len;
-			hit += mask * invrd * childSize;
-			roInChild += rd * len-mask*sign(rd) * childSize;
-			vec3 newfro = roWhichChild + mask * sign(rd) * childSize;
+			hit += dirs * (1.0 / abs(rayDir)) * childSize;
+			raySrcInSub += rayDir * len-dirs*sign(rayDir) * childSize;
+			vec3 newfro = raySrcInCur + dirs * sign(rayDir) * childSize;
 			dist += len;
-			exitoct = (floor(newfro / childSize * 0.5 + 0.25) != floor(roWhichChild / childSize * 0.5 + 0.25));
-			roWhichChild = newfro;
-			lastmask = mask;
+			levelUp = (floor(newfro / childSize * 0.5 + 0.25) != floor(raySrcInCur / childSize * 0.5 + 0.25));
+			raySrcInCur = newfro;
+			prevDirs = dirs;
 			
-		} else {
-			break;
-		}
+		} else { break; }
 		
 		if (controlsIn.z == 1) { // draw grid
-			vec3 q = abs(roInChild / childSize - 0.5) * (1.0 - lastmask);
-			edge = min(edge, -(max(max(q.x, q.y), q.z)-0.5) * 1000.0 * childSize);
+			vec3 q = abs(raySrcInSub / childSize - 0.5) * (1.0 - prevDirs);
+			hitclass.x = min(hitclass.x, -(max(max(q.x, q.y), q.z)-0.5) * 1000.0 * childSize);
 		}
 	}
-	return vec4(dist, -mask * sign(rd));
+	return vec4(dist, -dirs * sign(rayDir));
 }
 
 void main() {
+	vec3 rayDir = normalize(vec3(((gl_FragCoord.xy * 2.0 - resIn) / resIn.y), 1));
+	rayDir.zy *= mat2(cos(camRotIn.y), -sin(camRotIn.y), sin(camRotIn.y), cos(camRotIn.y));
+	rayDir.zx *= mat2(cos(camRotIn.x), -sin(camRotIn.x), sin(camRotIn.x), cos(camRotIn.x));
 	
-	vec2 uv = (gl_FragCoord.xy * 2.0 - resIn) / resIn.y;
-	
-	vec3 rd = normalize(vec3(uv, 1));
-	rd.zy *= mat2(cos(camRotIn.y), -sin(camRotIn.y), sin(camRotIn.y), cos(camRotIn.y));
-	rd.zx *= mat2(cos(camRotIn.x), -sin(camRotIn.x), sin(camRotIn.x), cos(camRotIn.x));
-	
-	float edge = 1.0;
+	vec4 hitclass = vec4(0.0);
 	uint voxel = 0;
-	vec4 len = octreeray(camPosIn.xyz, rd, 4.0, epsilon, edge, voxel);
-	vec3 ro = camPosIn.xyz+rd*len.x;
+	vec4 hit = rayMarch(camPosIn.xyz, rayDir, 4.0, epsilon, hitclass, voxel);
+	if (vdGetIsFilled(voxel)) { fsOut.xyz = vec3(vdGetRed(voxel), vdGetGreen(voxel), vdGetBlue(voxel)); }
+	else { fsOut.xyz = vec3(0.2, 0.2, 0.2); }
 	
-	vec3 grid = vec3(edge);
-	
-	bool something = len.yzw != vec3(0);
-	
-	if (!something) {
-		len.yzw = findnormal(ro);
-	}
-	
-	if (vdGetIsFilled(voxel)) {
-		fsOut.xyz = vec3(vdGetRed(voxel), vdGetGreen(voxel), vdGetBlue(voxel));
-	} else {
-		fsOut.xyz = vec3(0.2, 0.2, 0.2);
-	}
 	fsOut *= fsOut;
-	
-	if (controlsIn.z == 1.0) {
-		float a = mod(dot(floor(grid), vec3(1)), 2.0);
-		fsOut = fsOut * a;
-	} else if (controlsIn.z == 2.0) {
-		vec3 normal = len.yzw;
-		fsOut.xyz = abs(normal);
-	}
-	
+	if (controlsIn.z == 1.0) { fsOut = fsOut * floor(hitclass.x); } // grid view
+	else if (controlsIn.z == 2.0 && vdGetIsFilled(voxel)) { fsOut.xyz = abs(hit.yzw); } // normals view
 	fsOut = sqrt(fsOut);
+	
 	fsOut.rgb = pow(fsOut.rgb, vec3(1./2.2));
 }

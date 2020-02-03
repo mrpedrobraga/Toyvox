@@ -2,6 +2,8 @@
 #pragma once
 
 #include "extern.hpp"
+#include "morton.h"
+#include "buffers.hpp"
 
 namespace tvx {
 	enum class OctCoordCartesian {
@@ -49,13 +51,20 @@ namespace tvx {
 			 */
 	};
 	
-	template<typename VoxType>
-	class Octree {
-			VoxType voxels;
+	template<uint64_t bufSize, int bufType, uint32_t maxLvl = 4>
+	class Voxtree {
+			GeneralBuffer<bufSize, bufType> voxels;
 		public:
-			explicit Octree(GLuint binding) : voxels(binding) { }
+			explicit Voxtree(GLuint binding) : voxels(binding) { }
+			void insert(const VoxelDword &voxel, uint_fast64_t morton) {
+				voxels.template writeToCpu<VoxelDword>(morton, voxel);
+			}
+			void insert(const VoxelDword &voxel, glm::uvec3 pos) {
+				uint_fast32_t morton = libmorton::morton3D_32_encode(pos.x, pos.y, pos.z);
+				insert(voxel, morton);
+			}
 			void updateGpu() {
-				uint_fast64_t visibleLimit = 16 * 16 * 16;
+				uint_fast64_t visibleLimit = pow(pow(2, maxLvl), 3);
 				for (uint_fast64_t i = 0; i < visibleLimit; ++i) {
 					VoxelDword voxel;
 					voxel.setIsFilled(! (i % 5));
@@ -63,12 +72,12 @@ namespace tvx {
 					voxel.setRed((7.f / 2.f) * (1 + sinf(cycler)));
 					voxel.setGreen((7.f / 2.f) * (1 + sinf(cycler + M_PIf32 * (2.f / 3.f))));
 					voxel.setBlue((7.f / 2.f) * (1 + sinf(cycler + M_PIf32 * (4.f / 3.f))));
-					voxels.template writeToCpu<VoxelDword>(i, voxel);
+					insert(voxel, i);
 				}
 				for (uint_fast64_t i = visibleLimit; i < voxels.template getCapacity<VoxelDword>(); ++i) {
 					VoxelDword voxel;
 					voxel.setIsFilled(false);
-					voxels.template writeToCpu<VoxelDword>(i, voxel);
+					insert(voxel, i);
 				}
 				voxels.sendToGpu();
 			}

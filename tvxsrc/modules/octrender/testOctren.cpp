@@ -8,26 +8,23 @@
 
 using namespace tvx;
 
-static constexpr uint64_t voxelBufSize = 65536; // Minimum spec UBO size
-static constexpr int voxelBufType = GL_UNIFORM_BUFFER;
-static constexpr uint64_t unifBufSize = 512;
-static constexpr int unifBufType = GL_UNIFORM_BUFFER;
-static const char *vert = "cover.vert";
-static const char *fragDisp = "oct.frag";
+static constexpr uint64_t unifBufSize = 512, voxelBufSize = 65536; // 65536 is minimum spec UBO size
+static constexpr int unifBufType = GL_UNIFORM_BUFFER, voxelBufType = GL_UNIFORM_BUFFER;
+static const char *vert = "cover.vert", *frag = "oct.frag";
 
 int main(int argc, char **argv) {
 	SdlContext sdlc("Toyvox Octree Rendering Test");
 	GeneralBuffer<voxelBufSize, voxelBufType>::reportUboSupport();
 	
-	GLuint shaderDisp = shaderLoadFile(vert, fragDisp);
+	GLuint shaderDisp = shaderLoadFile(vert, frag);
 	bool reloadShader = false, isQuitRequested = false; // CLICK ANYWHERE IN WINDOW TO RELOAD SHADER FROM FILE
 	Subscription reloadSub("mouse_down_left", [&reloadShader] () -> void { reloadShader = true; });
 	Subscription quitSub("key_down_escape", [&isQuitRequested] () -> void { isQuitRequested = true; }); // ESC EXITS
 
 	ScreenCoveringTriangle tri;
 	GeneralBuffer<unifBufSize, unifBufType> globals(1);
-	Octree<GeneralBuffer<voxelBufSize, voxelBufType>> octree(0);
-	octree.updateGpu();
+	Voxtree<voxelBufSize, voxelBufType, 4> voxtree(0);
+	voxtree.updateGpu();
 	
 	FreeCamera cam(glm::vec3(0.3, 0.6, 0.1));
 	cam.setAspect(static_cast<float>(sdlc.getWindowWidth()) / static_cast<float>(sdlc.getWindowHeight()));
@@ -37,12 +34,10 @@ int main(int argc, char **argv) {
 		SdlContext::pollStates();
 		float dt = sdlc.getDeltaTime();
 		time += dt;
-		
 		if (reloadShader) {
 			reloadShader = false;
-			shaderReloadFile(&shaderDisp, vert, fragDisp);
+			shaderReloadFile(&shaderDisp, vert, frag);
 		}
-		
 		glm::mat4 uniformPackage;
 		uniformPackage[0] = glm::vec4(sdlc.getWindowWidth(), sdlc.getWindowHeight(), time, dt);
 		uniformPackage[1] = cam.getPos();
