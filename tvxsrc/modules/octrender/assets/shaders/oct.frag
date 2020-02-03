@@ -22,7 +22,7 @@ const uint mortonX[256] = {
 0x241200, 0x241201, 0x241208, 0x241209, 0x241240, 0x241241, 0x241248, 0x241249, 0x248000, 0x248001, 0x248008, 0x248009,
 0x248040, 0x248041, 0x248048, 0x248049, 0x248200, 0x248201, 0x248208, 0x248209, 0x248240, 0x248241, 0x248248, 0x248249,
 0x249000, 0x249001, 0x249008, 0x249009, 0x249040, 0x249041, 0x249048, 0x249049, 0x249200, 0x249201, 0x249208, 0x249209,
-0x249240, 0x249241, 0x249248, 0x249249};
+0x249240, 0x249241, 0x249248, 0x249249 };
 const uint mortonY[256] = {
 0x000000, 0x000002, 0x000010, 0x000012, 0x000080, 0x000082, 0x000090, 0x000092, 0x000400, 0x000402, 0x000410, 0x000412,
 0x000480, 0x000482, 0x000490, 0x000492, 0x002000, 0x002002, 0x002010, 0x002012, 0x002080, 0x002082, 0x002090, 0x002092,
@@ -45,7 +45,7 @@ const uint mortonY[256] = {
 0x482400, 0x482402, 0x482410, 0x482412, 0x482480, 0x482482, 0x482490, 0x482492, 0x490000, 0x490002, 0x490010, 0x490012,
 0x490080, 0x490082, 0x490090, 0x490092, 0x490400, 0x490402, 0x490410, 0x490412, 0x490480, 0x490482, 0x490490, 0x490492,
 0x492000, 0x492002, 0x492010, 0x492012, 0x492080, 0x492082, 0x492090, 0x492092, 0x492400, 0x492402, 0x492410, 0x492412,
-0x492480, 0x492482, 0x492490, 0x492492};
+0x492480, 0x492482, 0x492490, 0x492492 };
 const uint mortonZ[256] = {
 0x000000, 0x000004, 0x000020, 0x000024, 0x000100, 0x000104, 0x000120, 0x000124, 0x000800, 0x000804, 0x000820, 0x000824,
 0x000900, 0x000904, 0x000920, 0x000924, 0x004000, 0x004004, 0x004020, 0x004024, 0x004100, 0x004104, 0x004120, 0x004124,
@@ -68,28 +68,18 @@ const uint mortonZ[256] = {
 0x904800, 0x904804, 0x904820, 0x904824, 0x904900, 0x904904, 0x904920, 0x904924, 0x920000, 0x920004, 0x920020, 0x920024,
 0x920100, 0x920104, 0x920120, 0x920124, 0x920800, 0x920804, 0x920820, 0x920824, 0x920900, 0x920904, 0x920920, 0x920924,
 0x924000, 0x924004, 0x924020, 0x924024, 0x924100, 0x924104, 0x924120, 0x924124, 0x924800, 0x924804, 0x924820, 0x924824,
-0x924900, 0x924904, 0x924920, 0x924924};
+0x924900, 0x924904, 0x924920, 0x924924 };
 
-#define startdetail 10
-#define maxdetail 15
-#define mindetail 1
 #define steps 1000
-#define emptycells 0.4
-#define subdivisions 0.9
-#define counter 0
-#define lastmouse 1
-#define clickray 4
-#define detaildata 5
 #define datapixels 6
 #define cube_nothing 0
 #define cube_octree 1
 #define cube_empty 2
 #define cube_brick 3
-#define epsilon max(0.001*exp(-float(detail)), 0.0000001)
-
+#define epsilon 0.001// decrease further for finer detail
 
 layout (std140, binding = 0) uniform shader_data {
-	vec4 buf[4096]; // pack any data into vec4 to make full use of the aligned storage
+	vec4 buf[4096];// pack any data into vec4 to make full use of the aligned storage
 };
 layout (location = 0) in vec2 resIn;
 layout (location = 1) in float timeIn;
@@ -107,6 +97,11 @@ void morton32(out uint morton, uint x, uint y, uint z){
 	morton = morton << 48 | mortonZ[(z >> 8) & 0xFFu] | mortonY[(y >> 8) & 0xFFu] | mortonX[(x >> 8) & 0xFFu];
 	morton = morton << 24 | mortonZ[z & 0xFFu] | mortonY[y & 0xFFu] | mortonX[x & 0xFFu];
 }
+void morton16(out uint morton, uint x, uint y, uint z){
+	morton = 0;
+	morton = mortonZ[(z >> 8) & 0xFFu] | mortonY[(y >> 8) & 0xFFu] | mortonX[(x >> 8) & 0xFFu];
+	morton = morton << 24 | mortonZ[z & 0xFFu] | mortonY[y & 0xFFu] | mortonX[x & 0xFFu];
+}
 void morton8(out uint morton, uint x, uint y, uint z) { morton = mortonZ[z] | mortonY[y] | mortonX[x]; }
 void mortonVoxelDword(out uint mortonVoxel, uint uDwordIdx) {
 	mortonVoxel = floatBitsToUint(buf[uDwordIdx / 4][uDwordIdx % 4]);
@@ -114,7 +109,7 @@ void mortonVoxelDword(out uint mortonVoxel, uint uDwordIdx) {
 
 void voxelDwordGet(out uint voxel, uint x, uint y, uint z) {
 	uint mortonIdx;
-	morton32(mortonIdx, x, y, z);
+	morton16(mortonIdx, x, y, z);
 	mortonVoxelDword(voxel, mortonIdx);
 }
 bool vdGetIsFilled(uint voxel) { return bool(voxel & 0x100u); }
@@ -122,41 +117,22 @@ float vdGetRed(uint voxel) { return float((voxel & 0x1C00u) >> 10u) / 7.0; }
 float vdGetGreen(uint voxel) { return float((voxel & 0xE000u) >> 13u) / 7.0; }
 float vdGetBlue(uint voxel) { return float((voxel & 0x70000u) >> 16u) / 7.0; }
 
-
-float rnd(vec4 v) { return fract(4e4*sin(dot(v, vec4(13.46, 41.74, -73.36, 14.24))+17.34)); }
-int getvoxel(vec3 p, float size) { // 0 empty, 1 subdivide, 2 full
-	#ifdef objects
-	if (p.x==0.0&&p.y==0.0) {
-		return 0;
+uint fetchVoxel(vec3 p, float size, inout uint voxel) {
+	int xp = int(p.x * 2);
+	int yp = int(p.y * 2);
+	int zp = int(p.z * 2);
+	int lv = int(log2(1.0 / size) - 1.0);
+	int head = lv != 0 ? 8 : 0;
+	if (lv == 3) {
+		uvec3 pos = uvec3(p * 16);
+		voxelDwordGet(voxel, pos.x, pos.y, pos.z);
+		if (vdGetIsFilled(voxel)) {
+			return cube_brick;
+		} else {
+			return cube_empty;
+		}
 	}
-		#endif
-	
-	float val = rnd(vec4((p/size), size));
-	
-	if (val < emptycells) {
-		return cube_empty;
-	} else if (val < subdivisions) {
-		return cube_octree;
-	} else {
-		return cube_brick;
-	}
-}
-
-//uint fetchVoxel(vec3 p, float size) {
-//	uvec3 pos = uvec3(p * 32);
-//	uint voxel;
-//	voxelDwordGet(voxel, pos.x, pos.y, pos.z);
-//	bool isFilled = vdGetIsFilled(voxel);
-//	if (isFilled) {
-//		if (size < 0.125) { return cube_brick; }
-//		return cube_octree;
-//	}
-//	return cube_empty;
-//}
-
-float getkey(int x, int y)
-{
-	return texelFetch(dataTex, ivec2(x, y), 0).x;
+	return cube_octree;
 }
 
 vec4 getdata(int index) {
@@ -166,25 +142,28 @@ vec4 getdata(int index) {
 	return texelFetch(dataTex, p, 0);
 }
 
+vec3 voxelHit(vec3 ro, vec3 rd, float size) {
+	size *= 0.5;
+	vec3 hit = -(sign(rd)*(ro-size)-size)/max(abs(rd), 0.001);
+	return hit;
+}
+
 float map(vec3 p) {
 	p = mod(p, 0.1)-0.05;
 	return length(p)-0.02;
 }
 
-vec3 voxel(vec3 ro, vec3 rd, float size)
-{
-	size *= 0.5;
-	
-	vec3 hit = -(sign(rd)*(ro-size)-size)/max(abs(rd), 0.0001);
-	
-	return hit;
+vec3 findnormal(vec3 p) {
+	vec2 e = vec2(0.0, 0.001);
+	return normalize(vec3(map(p+e.yxx), map(p+e.xyx), map(p+e.xxy))-map(p));
 }
 
-vec4 octreeray(vec3 ro, vec3 rd, float maxdist, float e) {
+vec4 octreeray(vec3 ro, vec3 rd, float maxdist, float e, out float edge, inout uint voxel) {
+	edge = 1.0;
 	
-	float size = 0.5;
-	vec3 lro = mod(ro, size);
-	vec3 fro = ro-lro;
+	float childSize = 0.5;
+	vec3 roInChild = mod(ro, childSize);
+	vec3 roWhichChild = ro-roInChild;
 	vec3 mask = vec3(0);
 	vec3 lastmask = vec3(0);
 	bool exitoct = false;
@@ -197,86 +176,63 @@ vec4 octreeray(vec3 ro, vec3 rd, float maxdist, float e) {
 	int index = 0;
 	vec4 data;
 	vec3 invrd = 1.0/abs(rd);
-	vec3 hit = voxel(lro, rd, size);
+	vec3 hit = voxelHit(roInChild, rd, childSize);
 	
 	if (any(greaterThan(abs(ro-0.5), vec3(0.5)))) return vec4(0);
 	
-	for (i = 0; i < steps; i++)
-	{
-		if (dist > maxdist) break;
+	for (i = 0; i < steps; i++) {
 		
+		if (dist > maxdist) break;
 		if (recursions0 == recursions) {
-			vec3 q = mod(floor(fro/size+0.5)+0.5, 2.0)-0.5;
-			data = getdata(index*8+datapixels+int(dot(q, vec3(1, 2, 4))+0.5));
+			vec3 q = mod(floor(roWhichChild / childSize + 0.5) + 0.5, 2.0) - 0.5;
+			data = getdata(index * 8 + datapixels + int(dot(q, vec3(1, 2, 4)) + 0.5));
 		}
 		int voxelstate = int(data.w);
-		
 		if (recursions1 == recursions) {
-//			voxelstate1 = getvoxel(fro, size);
-//			voxelstate1 = int(fetchVoxel(fro, size));
-			voxelstate1 = cube_empty;
+			voxelstate1 = int(fetchVoxel(roWhichChild, childSize, voxel));
 		}
-		
 		bool isnothing = recursions0 < recursions || voxelstate == cube_nothing;
-		
 		if (isnothing) {
 			voxelstate = voxelstate1;
 		}
 		
-		if (recursions == maxdetail-1 && voxelstate == cube_octree) {
-			voxelstate = cube_empty;
-		}
-		// up level
-		if (exitoct)
-		{
+		if (exitoct) { // go up a level
 			
 			if (recursions0 == recursions) {
 				index = int(data.x);
 				recursions0--;
 			}
-			
 			if (recursions1 == recursions) {
 				recursions1--;
 			}
-			
-			vec3 newfro = floor(fro/size*0.5+0.25)*size*2.0;
-			
-			lro += fro-newfro;
-			fro = newfro;
-			
+			vec3 newfro = floor(roWhichChild / childSize * 0.5 + 0.25) * childSize * 2.0;
+			roInChild += roWhichChild - newfro;
+			roWhichChild = newfro;
 			recursions--;
-			size *= 2.0;
-			hit = voxel(lro, rd, size);
+			childSize *= 2.0;
+			hit = voxelHit(roInChild, rd, childSize);
 			if (recursions < 0) break;
-			exitoct = (abs(dot(mod(fro/size+0.5, 2.0)-1.0+mask*sign(rd)*0.5, mask))<0.1);
-		}
-		// subdivide
-		else if (voxelstate == cube_octree)
-		{
-			recursions++;
+			exitoct = (abs(dot(mod(roWhichChild / childSize + 0.5, 2.0) - 1.0 + mask * sign(rd) * 0.5, mask)) < 0.1);
 			
+		} else if (voxelstate == cube_octree) { //subdivide
+			
+			recursions++;
 			if (!isnothing) {
 				index = int(data.y);
 				recursions0++;
 			}
-			
 			if (voxelstate1 == cube_octree) {
 				recursions1++;
 			}
+			childSize *= 0.5;
+			vec3 mask2 = step(vec3(childSize), roInChild);// which of the 8 voxels to enter
+			roWhichChild += mask2 * childSize;
+			roInChild -= mask2 * childSize;
+			hit = voxelHit(roInChild, rd, childSize);
 			
-			size *= 0.5;
+		} else if (voxelstate == cube_nothing || voxelstate == cube_empty) { //move forward
 			
-			// find which of the 8 voxels i will enter
-			vec3 mask2 = step(vec3(size), lro);
-			fro += mask2*size;
-			lro -= mask2*size;
-			hit = voxel(lro, rd, size);
-		}
-		// move forward
-		else if (voxelstate == cube_nothing || voxelstate == cube_empty)
-		{
-			// raycast and find distance to nearest voxel surface in ray direction
-			if (hit.x < min(hit.y, hit.z)) {
+			if (hit.x < min(hit.y, hit.z)) { // raycast and find distance to nearest voxel surface in ray direction
 				mask = vec3(1, 0, 0);
 			} else if (hit.y < hit.z) {
 				mask = vec3(0, 1, 0);
@@ -284,180 +240,63 @@ vec4 octreeray(vec3 ro, vec3 rd, float maxdist, float e) {
 				mask = vec3(0, 0, 1);
 			}
 			float len = dot(hit, mask);
-			
 			hit -= len;
-			
-			hit += mask*invrd*size;
-			
-			lro += rd*len-mask*sign(rd)*size;
-			vec3 newfro = fro+mask*sign(rd)*size;
-			
+			hit += mask * invrd * childSize;
+			roInChild += rd * len-mask*sign(rd) * childSize;
+			vec3 newfro = roWhichChild + mask * sign(rd) * childSize;
 			dist += len;
-			exitoct = (floor(newfro/size*0.5+0.25)!=floor(fro/size*0.5+0.25));
-			fro = newfro;
+			exitoct = (floor(newfro / childSize * 0.5 + 0.25) != floor(roWhichChild / childSize * 0.5 + 0.25));
+			roWhichChild = newfro;
 			lastmask = mask;
-		}
-		else
-		{
+			
+		} else {
 			break;
 		}
+		
+		if (controlsIn.z == 1) { // draw grid
+			vec3 q = abs(roInChild / childSize - 0.5) * (1.0 - lastmask);
+			edge = min(edge, -(max(max(q.x, q.y), q.z)-0.5) * 1000.0 * childSize);
+		}
 	}
-	return vec4(dist, -mask*sign(rd));
+	return vec4(dist, -mask * sign(rd));
 }
 
-vec4 updatedata(int index) {
-	vec4 data = getdata(index);
-	vec2 ndcPointAt = vec2(0);
+void main() {
 	
-	int detail = int(getdata(detaildata).x);
-	vec4 cray = getdata(clickray);
-	vec4 lastMouse = getdata(lastmouse);
-	vec4 counterdata = getdata(counter);
+	vec2 uv = (gl_FragCoord.xy * 2.0 - resIn) / resIn.y;
 	
-//	bool click = lastMouse.z > 0.0 && camRotIn.z < 0.0 && length(lastMouse.xy-lastMouse.zw)<10.0;
-	bool click = camRotIn.z < 0.0;
-	bool erase = camRotIn.w < 0.0;
-	vec3 mpos = cray.xyz;
-	if (any(greaterThan(abs(mpos-0.5), vec3(0.5)))) click = false;
+	vec3 rd = normalize(vec3(uv, 1));
+	rd.zy *= mat2(cos(camRotIn.y), -sin(camRotIn.y), sin(camRotIn.y), cos(camRotIn.y));
+	rd.zx *= mat2(cos(camRotIn.x), -sin(camRotIn.x), sin(camRotIn.x), cos(camRotIn.x));
 	
-	bool refresh = (resIn.xy!=counterdata.zw);
+	float edge = 1.0;
+	uint voxel = 0;
+	vec4 len = octreeray(camPosIn.xyz, rd, 4.0, epsilon, edge, voxel);
+	vec3 ro = camPosIn.xyz+rd*len.x;
 	
-	float size = 0.5;
-	vec4 data2;
-	int index3 = 0;
-	vec3 p;
-	int i = 0;
-	while (true) {
-		p = mod(floor(mpos/size)+0.5, 2.0)-0.5;
-		data2 = getdata(index3*8+datapixels+int(dot(p, vec3(1, 2, 4))));
-		if (int(data2.w) != cube_octree||i == detail-1) {
-			break;
-		}
-		i++;
-		size /= 2.0;
-		index3 = int(data2.y);
+	vec3 grid = vec3(edge);
+	
+	bool something = len.yzw != vec3(0);
+	
+	if (!something) {
+		len.yzw = findnormal(ro);
 	}
-	int subdivides = detail-i-1;
 	
-	
-	if (index == counter) {
-		if (refresh) {
-			data = vec4(0, 0, resIn.xy);
-			return data;
-		}
-		if (click) {
-			data.x += float(max(subdivides, 0));
-		}
-		return data;
-	} else if (index == lastmouse) {
-		return camRotIn;
-	} else if (index == clickray) {
-		
-		if (refresh) {
-			return vec4(0);
-		}
-//		if (camRotIn.z > 0.0 && lastMouse.z < 0.0) {
-		if (camRotIn.z > 0.0) {
-			
-			vec3 ro = camPosIn.xyz;
-			vec3 rd = normalize(vec3(ndcPointAt, 1));
-			rd.zy *= mat2(cos(camRotIn.y), -sin(camRotIn.y), sin(camRotIn.y), cos(camRotIn.y));
-			rd.zx *= mat2(cos(camRotIn.x), -sin(camRotIn.x), sin(camRotIn.x), cos(camRotIn.x));
-			vec4 len = octreeray(ro, rd, 1.0, epsilon);
-			vec3  normal = len.yzw;
-			float minsize = 0.5/exp2(float(detail));
-			
-			if (erase) {
-				ro += len.x*rd-normal*epsilon;
-			} else {
-				ro += len.x*rd+normal*epsilon;
-			}
-			
-			ro = clamp(ro, epsilon, 1.0-epsilon);
-			
-			data.xyz = floor(ro/minsize)*minsize;
-			//data.w = float((getkey(KEY_E,1)>0.5)||(getkey(KEY_Q,1)>0.5));
-		}
-		return data;
-		
-	} else if (index == detaildata) {
-		
-		if (refresh) {
-			return vec4(startdetail);
-		}
-		
-		float keys = float(controlsIn.y < 0.0) - float(controlsIn.x < 0.0);
-		data.x = clamp(data.x + keys, float(mindetail), float(maxdetail));
-		
-		data.y = keys;
-		
-		return data;
+	if (vdGetIsFilled(voxel)) {
+		fsOut.xyz = vec3(vdGetRed(voxel), vdGetGreen(voxel), vdGetBlue(voxel));
 	} else {
-		
-		if (refresh) {
-			data = vec4(-1, -1, 0, 0);
-			return data;
-		}
-		if (click) {
-			int index2 = index-datapixels;
-			int quad = index2/8;
-			int quadindex = index2-quad*8;
-			if (quad <= int(counterdata.x)) {
-				//if (data.y < -0.5)
-				{
-					if (index3 == quad) {
-						vec3 clickp = mod(floor(mpos/size)+0.5, 2.0)-0.5;
-						int clicki = quad*8+int(dot(clickp, vec3(1, 2, 4)));
-						
-						if (clicki == index2) {
-							if (i == detail-1) {
-								if (erase) {
-									data.w = float(cube_empty);
-								} else {
-									data.w = float(cube_brick);
-								}
-								data.y = -1.0;
-								return data;
-							}
-							data.w = float(cube_octree);
-							data.y = counterdata.x+1.0;
-						}
-					}
-				}
-			} else if (quad <= int(counterdata.x)+subdivides) {
-				vec3 q = mod(floor(mpos*exp2(float(i+quad)-counterdata.x+1.0))+0.5, 2.0)-0.5;
-				vec3 q2 = vec3(quadindex%2, (quadindex/2)%2, quadindex/4);
-				
-				if (quad == int(counterdata.x)+1) {
-					data.x = float(index3);
-				} else {
-					data.x = float(quad-1);
-				}
-				
-				if (dot(abs(q-q2), vec3(1))<0.1) {
-					data.w = float(cube_octree);
-					data.y = float(quad+1);
-					if (quad == int(counterdata.x)+subdivides) {
-						if (erase) {
-							data.w = float(cube_empty);
-						} else {
-							data.w = float(cube_brick);
-						}
-						data.y = -1.0;
-					}
-				} else {
-					data.w = data2.w;
-					data.y = -1.0;
-				}
-			}
-		}
+		fsOut.xyz = vec3(0.2, 0.2, 0.2);
+	}
+	fsOut *= fsOut;
+	
+	if (controlsIn.z == 1.0) {
+		float a = mod(dot(floor(grid), vec3(1)), 2.0);
+		fsOut = fsOut * a;
+	} else if (controlsIn.z == 2.0) {
+		vec3 normal = len.yzw;
+		fsOut.xyz = abs(normal);
 	}
 	
-	return data;
-}
-
-void main()
-{
-	ivec2 coord = ivec2(gl_FragCoord);
-	fsOut = updatedata(coord.x+coord.y*int(resIn.x));
+	fsOut = sqrt(fsOut);
+	fsOut.rgb = pow(fsOut.rgb, vec3(1./2.2));
 }

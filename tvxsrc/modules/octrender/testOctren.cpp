@@ -13,7 +13,7 @@ static constexpr int voxelBufType = GL_UNIFORM_BUFFER;
 static constexpr uint64_t unifBufSize = 512;
 static constexpr int unifBufType = GL_UNIFORM_BUFFER;
 static const char *vert = "cover.vert";
-static const char *fragDisp = "cooler.frag";
+static const char *fragDisp = "oct.frag";
 
 int main(int argc, char **argv) {
 	SdlContext sdlc("Toyvox Octree Rendering Test");
@@ -25,23 +25,12 @@ int main(int argc, char **argv) {
 	Subscription quitSub("key_down_escape", [&isQuitRequested] () -> void { isQuitRequested = true; }); // ESC EXITS
 
 	ScreenCoveringTriangle tri;
-	GeneralBuffer<voxelBufSize, voxelBufType> voxels(0);
 	GeneralBuffer<unifBufSize, unifBufType> globals(1);
+	Octree<GeneralBuffer<voxelBufSize, voxelBufType>> octree(0);
+	octree.updateGpu();
 	
-	FreeCamera cam(glm::vec3(0.3, 0.6, 0.3));
+	FreeCamera cam(glm::vec3(0.3, 0.6, 0.1));
 	cam.setAspect(static_cast<float>(sdlc.getWindowWidth()) / static_cast<float>(sdlc.getWindowHeight()));
-
-	uint_fast32_t colorAxisDivisor = 2;//4
-	for (uint_fast64_t i = 0; i < voxels.getCapacity<VoxelDword>(); ++i) {
-		glm::uvec3 pos = VoxelDword::demortonize(i);
-		VoxelDword voxel;
-		voxel.setIsFilled(! (i % 5));
-		voxel.setRed(pos.x / colorAxisDivisor);
-		voxel.setGreen(pos.z / colorAxisDivisor);
-		voxel.setBlue(pos.y / colorAxisDivisor);
-		voxels.writeToCpu<VoxelDword>(i, voxel);
-	}
-	voxels.sendToGpu();
 	
 	float time = 0.f;
 	while (sdlc.pollEvents(isQuitRequested)) {

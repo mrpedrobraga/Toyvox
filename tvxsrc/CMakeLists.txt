@@ -15,6 +15,6 @@ target_link_libraries( ${TARGET_NAME}_sdltest ${TARGET_PREFIX}_extern )
 target_include_directories( ${TARGET_NAME}_sdltest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
 
 # Minigame
-add_executable( ${TARGET_NAME}_minigame minigame.cpp )
+add_executable( ${TARGET_NAME}_minigame minigame.cpp modules/pbostream/pbos.hpp modules/pbostream/pbos.cpp )
 target_link_libraries( ${TARGET_NAME}_minigame ${TARGET_PREFIX}_extern )
 target_include_directories( ${TARGET_NAME}_minigame PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )

@@ -67,4 +67,5 @@ namespace tvx {
 	void VoxelDword::setLightness(uint_fast8_t in) {
 		data[3] = (data[3] & 0b00001111u) | ((uint8_t)(in << 4u) & 0b11110000u);
 	}
+	
 }

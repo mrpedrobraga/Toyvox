@@ -17,13 +17,7 @@ namespace tvx {
 				GLsizei length,
 				const GLchar *message,
 				const void *userParam
-	) {
-		(void) source;
-		(void) type;
-		(void) id;
-		(void) severity;
-		(void) length;
-		(void) userParam;
+	) { (void) source; (void) type; (void) id; (void) severity; (void) length; (void) userParam;
 		if (severity == GL_DEBUG_SEVERITY_HIGH_ARB) {
 			SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "%s\n", message);
 		} else {
@@ -31,7 +25,6 @@ namespace tvx {
 		}
 	}
 	static void setupOpenglDebugCallback() {
-		// Enable the debug callback
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
 		glDebugMessageCallbackARB(openglCallbackFunction, nullptr);

@@ -48,4 +48,29 @@ namespace tvx {
 			 * "true black" which reflects no light, while the extreme lightest value codes for "sky."
 			 */
 	};
+	
+	template<typename VoxType>
+	class Octree {
+			VoxType voxels;
+		public:
+			explicit Octree(GLuint binding) : voxels(binding) { }
+			void updateGpu() {
+				uint_fast64_t visibleLimit = 16 * 16 * 16;
+				for (uint_fast64_t i = 0; i < visibleLimit; ++i) {
+					VoxelDword voxel;
+					voxel.setIsFilled(! (i % 5));
+					float cycler = 0.0043f * i;
+					voxel.setRed((7.f / 2.f) * (1 + sinf(cycler)));
+					voxel.setGreen((7.f / 2.f) * (1 + sinf(cycler + M_PIf32 * (2.f / 3.f))));
+					voxel.setBlue((7.f / 2.f) * (1 + sinf(cycler + M_PIf32 * (4.f / 3.f))));
+					voxels.template writeToCpu<VoxelDword>(i, voxel);
+				}
+				for (uint_fast64_t i = visibleLimit; i < voxels.template getCapacity<VoxelDword>(); ++i) {
+					VoxelDword voxel;
+					voxel.setIsFilled(false);
+					voxels.template writeToCpu<VoxelDword>(i, voxel);
+				}
+				voxels.sendToGpu();
+			}
+	};
 }
