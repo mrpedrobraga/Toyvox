@@ -24,7 +24,7 @@ namespace tvx {
 		(void) severity;
 		(void) length;
 		(void) userParam;
-		if (severity == GL_DEBUG_SEVERITY_HIGH) {
+		if (severity == GL_DEBUG_SEVERITY_HIGH_ARB) {
 			SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "%s\n", message);
 		} else {
 			SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "%s\n", message);
@@ -33,9 +33,9 @@ namespace tvx {
 	static void setupOpenglDebugCallback() {
 		// Enable the debug callback
 		glEnable(GL_DEBUG_OUTPUT);
-		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-		glDebugMessageCallback(openglCallbackFunction, nullptr);
-		glDebugMessageControl(
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+		glDebugMessageCallbackARB(openglCallbackFunction, nullptr);
+		glDebugMessageControlARB(
 					GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, true
 		);
 	}
@@ -58,9 +58,10 @@ namespace tvx {
 			if (priority == SDL_LOG_PRIORITY_CRITICAL) { exit(9000); }
 		}
 	}
-	
-	SdlContext::SdlContext(const char *applicationName)
-				: logSub("log", [](void *data) -> void { fprintf(stdout, "%s\n", (char *) data); }),
+
+	SdlContext::SdlContext(const char *applicationName, uint_fast64_t w, uint_fast64_t h)
+				: windowWidth(w), windowHeight(h),
+				  logSub("log", [](void *data) -> void { fprintf(stdout, "%s\n", (char *) data); }),
 				  errSub("err", [](void *data) -> void { fprintf(stderr, "%s\n", (char *) data); }) {
 
 		SDL_LogSetOutputFunction(SDL_LogOutput, nullptr);
@@ -89,12 +90,10 @@ namespace tvx {
 
 		// Create the window
 		window = SDL_CreateWindow(
-					applicationName,         // window title
-					SDL_WINDOWPOS_UNDEFINED, // x (SDL_WINDOWPOS_UNDEFINED means "doesn't matter")
-					SDL_WINDOWPOS_UNDEFINED, // y (SDL_WINDOWPOS_UNDEFINED means "doesn't matter")
-					768,                     // width
-					768,                     // height
-					windowFlags              // flags
+					applicationName,           // window title
+					0x1FFF0000u, 0x1FFF0000u,  // don't care where window is
+					windowWidth, windowHeight, // merely suggestions
+					windowFlags                // flags
 		);
 		if (!window) {
 			SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to create SDL window: %s\n", SDL_GetError());

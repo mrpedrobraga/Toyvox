@@ -13,14 +13,12 @@ static constexpr int voxelBufType = GL_UNIFORM_BUFFER;
 static constexpr uint64_t unifBufSize = 512;
 static constexpr int unifBufType = GL_UNIFORM_BUFFER;
 static const char *vert = "cover.vert";
-static const char *fragGen = "cool.frag";
 static const char *fragDisp = "cooler.frag";
 
 int main(int argc, char **argv) {
 	SdlContext sdlc("Toyvox Octree Rendering Test");
 	GeneralBuffer<voxelBufSize, voxelBufType>::reportUboSupport();
 	
-	GLuint shaderGen = shaderLoadFile(vert, fragGen);
 	GLuint shaderDisp = shaderLoadFile(vert, fragDisp);
 	bool reloadShader = false, isQuitRequested = false; // CLICK ANYWHERE IN WINDOW TO RELOAD SHADER FROM FILE
 	Subscription reloadSub("mouse_down_left", [&reloadShader] () -> void { reloadShader = true; });
@@ -29,10 +27,21 @@ int main(int argc, char **argv) {
 	ScreenCoveringTriangle tri;
 	GeneralBuffer<voxelBufSize, voxelBufType> voxels(0);
 	GeneralBuffer<unifBufSize, unifBufType> globals(1);
-	IntermediateTexture<GL_RGBA, GL_FLOAT, GL_LINEAR> dataTex(512, 512);
 	
-	FreeCamera cam(glm::vec3(0.1, 0.1, 0.1));
+	FreeCamera cam(glm::vec3(0.3, 0.6, 0.3));
 	cam.setAspect(static_cast<float>(sdlc.getWindowWidth()) / static_cast<float>(sdlc.getWindowHeight()));
+
+	uint_fast32_t colorAxisDivisor = 2;//4
+	for (uint_fast64_t i = 0; i < voxels.getCapacity<VoxelDword>(); ++i) {
+		glm::uvec3 pos = VoxelDword::demortonize(i);
+		VoxelDword voxel;
+		voxel.setIsFilled(! (i % 5));
+		voxel.setRed(pos.x / colorAxisDivisor);
+		voxel.setGreen(pos.z / colorAxisDivisor);
+		voxel.setBlue(pos.y / colorAxisDivisor);
+		voxels.writeToCpu<VoxelDword>(i, voxel);
+	}
+	voxels.sendToGpu();
 	
 	float time = 0.f;
 	while (sdlc.pollEvents(isQuitRequested)) {
@@ -42,21 +51,8 @@ int main(int argc, char **argv) {
 		
 		if (reloadShader) {
 			reloadShader = false;
-			shaderReloadFile(&shaderGen, vert, fragGen);
 			shaderReloadFile(&shaderDisp, vert, fragDisp);
 		}
-
-		uint_fast32_t colorAxisDivisor = 1;//4
-		for (int i = 0; i < voxels.getCapacity<VoxelDword>(); ++i) {
-			glm::uvec3 pos = VoxelDword::demortonize(i);
-			VoxelDword voxel;
-			voxel.setIsFilled(true);
-			voxel.setRed(pos.x / colorAxisDivisor);
-			voxel.setGreen(pos.z / colorAxisDivisor);
-			voxel.setBlue(pos.y / colorAxisDivisor);
-			voxels.writeToCpu<VoxelDword>(i, voxel);
-		}
-		voxels.sendToGpu();
 		
 		glm::mat4 uniformPackage;
 		uniformPackage[0] = glm::vec4(sdlc.getWindowWidth(), sdlc.getWindowHeight(), time, dt);
@@ -65,21 +61,12 @@ int main(int argc, char **argv) {
 		uniformPackage[3] = cam.getCtrl();
 		globals.writeToCpu<glm::mat4>(0, uniformPackage);
 		globals.sendToGpu();
-
 		
 		glBindVertexArray(tri.getVao());
-		
-		dataTex.setToGenerate();
-		glUseProgram(shaderGen);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-		
-		dataTex.setToRead(sdlc.getWindowWidth(), sdlc.getWindowHeight());
 		glUseProgram(shaderDisp);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
-		
 		glBindVertexArray(0);
 		glUseProgram(0);
-		
 		
 		sdlc.swapWindow();
 		cam.refresh(dt);

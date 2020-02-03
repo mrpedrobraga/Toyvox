@@ -4,6 +4,17 @@
 #include "extern.hpp"
 
 namespace tvx {
+	enum class OctCoordCartesian {
+			XNYNZN = 0,
+			XNYNZP,
+			XNYPZN,
+			XNYPZP,
+			XPYNZN,
+			XPYNZP,
+			XPYPZN,
+			XPYPZP,
+	};
+	
 	class VoxelDword {
 			uint8_t data[4] = {};
 		public:
@@ -22,6 +33,7 @@ namespace tvx {
 			[[nodiscard]] uint_fast8_t getRoughness() const;
 			[[nodiscard]] uint_fast8_t getLightness() const;
 			void setBits(uint32_t in);
+			void setChildOn(OctCoordCartesian which);
 			void setIsFilled(bool in);
 			void setIsMetal(bool in);
 			void setRed(uint_fast8_t in);

@@ -74,8 +74,8 @@ const uint mortonZ[256] = {
 #define maxdetail 15
 #define mindetail 1
 #define steps 1000
-#define emptycells 0.5
-#define subdivisions 0.90
+#define emptycells 0.4
+#define subdivisions 0.9
 #define counter 0
 #define lastmouse 1
 #define clickray 4
@@ -142,14 +142,17 @@ int getvoxel(vec3 p, float size) { // 0 empty, 1 subdivide, 2 full
 	}
 }
 
-uint fetchVoxel(vec3 p, float size) {
-	uvec3 pos = uvec3(p);
-	uint voxel;
-	voxelDwordGet(voxel, pos.x, pos.y, pos.z);
-	bool isFilled = vdGetIsFilled(voxel);
-	if (isFilled) { return 2; }
-	return 0;
-}
+//uint fetchVoxel(vec3 p, float size) {
+//	uvec3 pos = uvec3(p * 32);
+//	uint voxel;
+//	voxelDwordGet(voxel, pos.x, pos.y, pos.z);
+//	bool isFilled = vdGetIsFilled(voxel);
+//	if (isFilled) {
+//		if (size < 0.125) { return cube_brick; }
+//		return cube_octree;
+//	}
+//	return cube_empty;
+//}
 
 float getkey(int x, int y)
 {
@@ -209,8 +212,9 @@ vec4 octreeray(vec3 ro, vec3 rd, float maxdist, float e) {
 		int voxelstate = int(data.w);
 		
 		if (recursions1 == recursions) {
-			voxelstate1 = getvoxel(fro, size);
+//			voxelstate1 = getvoxel(fro, size);
 //			voxelstate1 = int(fetchVoxel(fro, size));
+			voxelstate1 = cube_empty;
 		}
 		
 		bool isnothing = recursions0 < recursions || voxelstate == cube_nothing;

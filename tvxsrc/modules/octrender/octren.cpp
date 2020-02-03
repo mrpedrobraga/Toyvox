@@ -32,6 +32,9 @@ namespace tvx {
 	void VoxelDword::setBits(uint32_t in) {
 		*this = *reinterpret_cast<VoxelDword*>(&in);
 	}
+	void VoxelDword::setChildOn(OctCoordCartesian which) {
+		data[0] |= (0b1u << static_cast<uint_fast8_t>(which));
+	}
 	void VoxelDword::setIsFilled(bool in) {
 		if (in) {
 			data[1] |= 0b00000001u;

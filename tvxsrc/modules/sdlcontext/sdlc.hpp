@@ -11,7 +11,7 @@
 namespace tvx {
   class SdlContext {
     public:
-      explicit SdlContext(const char *applicationName);
+      explicit SdlContext(const char *applicationName, uint_fast64_t w = 800, uint_fast64_t h = 600);
       virtual ~SdlContext();
       void setFullscreenMode(SDL_WindowFlags mode);
       bool pollEvents(bool isQuitRequested);
