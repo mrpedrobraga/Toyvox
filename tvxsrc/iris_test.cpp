@@ -4,10 +4,6 @@
 #include "tvxutil.h"
 #include "tvx_glutil.h"
 
-SDL_Window* window;
-SDL_GLContext glcontext;
-SDL_Event event;
-
 struct Color {
 private:
 	unsigned char mr, mg, mb, ma;
@@ -26,10 +22,6 @@ Octree<Color> model(2048);
 
 bool quit = false;
 
-#define ERRORCHECK while((err = glGetError()) != GL_NO_ERROR){ std::cout << "Error here"; }
-#define HEYTHERE std::cout << "Well this is supposed to be printed on the console."
-GLenum err;
-
 void generate_points(GLuint &AO, GLuint &BO) {
 	float vertices[] =
 	{
@@ -39,35 +31,34 @@ void generate_points(GLuint &AO, GLuint &BO) {
 			-0.5, +0.5, 0.0
 	};
 	glGenVertexArrays(1, &AO);
-	ERRORCHECK;
-	glGenBuffers(1, &BO);
-	ERRORCHECK;
-	glBindVertexArray(AO);
-	ERRORCHECK;
-	glBindBuffer(GL_ARRAY_BUFFER, BO);
-	ERRORCHECK;
-	{
+		glGenBuffers(1, &BO);
+		glBindVertexArray(AO);
+		glBindBuffer(GL_ARRAY_BUFFER, BO);
+		{
 		glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), vertices, GL_STATIC_DRAW );
-		ERRORCHECK;
-		glEnableVertexAttribArray( 0 );
-		ERRORCHECK;
-		glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, nullptr );
-		ERRORCHECK;
-	}
+				glEnableVertexAttribArray( 0 );
+				glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, nullptr );
+			}
 	glBindBuffer( GL_ARRAY_BUFFER, 0 );
-	ERRORCHECK;
-	glBindVertexArray( 0 );
-	ERRORCHECK;
-}
+		glBindVertexArray( 0 );
+	}
 
 int main (int argc, char** argv) {
-	HEYTHERE;
+
+	SDL_Window* window;
+	SDL_GLContext glcontext;
+	SDL_Event event;
+
 	SDL_Init(SDL_INIT_EVERYTHING);
 
 	SDL_GL_LoadLibrary(NULL);
 
+	gladLoadGLLoader(SDL_GL_GetProcAddress);
+
+	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
@@ -78,10 +69,26 @@ int main (int argc, char** argv) {
 	window = SDL_CreateWindow("Toyvox Game",
 														SDL_WINDOWPOS_UNDEFINED,
 														SDL_WINDOWPOS_UNDEFINED,
-														960,
-														540,
+														320,
+														180,
 														SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+	if (!window) {
+		SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to create SDL window: %s\n", SDL_GetError()); fflush(stdout);fflush(stderr);
+	}
+
 	glcontext = SDL_GL_CreateContext(window);
+	if (!glcontext) {
+		SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Fail: %s\n", SDL_GetError());fflush(stdout);fflush(stderr);
+	}
+
+	// Load OpenGL pointers and print info
+	printf("OpenGL loading...\n");
+
+	printf("Vendor:          %s\n", glGetString(GL_VENDOR));
+	printf("Renderer:        %s\n", glGetString(GL_RENDERER));
+	printf("Version OpenGL:  %s\n", glGetString(GL_VERSION));
+	printf("Version GLSL:    %s\n\n\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+	fflush(stdout); fflush(stderr);
 
 	gladLoadGLLoader(SDL_GL_GetProcAddress);
 
@@ -89,36 +96,42 @@ int main (int argc, char** argv) {
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
 
-	SDL_SetWindowGrab(window, SDL_TRUE);
-	SDL_SetRelativeMouseMode(SDL_TRUE);
-	HEYTHERE;
-	GLuint program = tvx::program_from_file("native-extensios/iris-renderer/main.vert", "native-extensions/iris-renderer/main.frag");
-	if (!program) { SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Couldn't compile shaders!!!\n"); }
-	ERRORCHECK;
+	//SDL_SetWindowGrab(window, SDL_TRUE);
+	//SDL_SetRelativeMouseMode(SDL_TRUE);
+
+	const char* vertex = 		"#version 330 core\n"
+													"layout (location = 0) in vec3 vpos\n"
+													"void main(){\n"
+													"gl_Position = vec4(vpos, 1.0);"
+													"}";
+
+	const char* fragment = 	"#version 330 core\n"
+													"void main(){\n"
+													"gl_FragColor = vec4(0.2, 0.4, 0.8, 1.0);\n"
+													"}";
+
+  //std::cout << vertex << "\n\n" << fragment << "\n\nThose are the shaders!\n"; fflush(stdout);
+
+	GLuint program = tvx::program_from_string(vertex, fragment);
+
+	if (!program) { SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Couldn't compile shaders!!!\n"); fflush(stderr); }
 	glClearColor(0.2f, 0.4f, 0.8f, 1.0f);
-	GLuint AO, BO;
-	generate_points(AO, BO);
+	//GLuint AO, BO;
+	//generate_points(AO, BO);
 
 	while (!quit) {
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		ERRORCHECK;
-		glUseProgram(program);
-		ERRORCHECK;
-		glBindVertexArray(AO);
-		ERRORCHECK;
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-		ERRORCHECK;
-		glBindVertexArray(0);
-		ERRORCHECK;
-	  glUseProgram(0);
-		ERRORCHECK;
+				//glUseProgram(program);
+				//glBindVertexArray(AO);
+				//glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+				//glBindVertexArray(0);
+			  //glUseProgram(0);
 
 		SDL_GL_SwapWindow(window);
 
 		while(SDL_PollEvent(&event))
 		{
-
 			if(event.type == SDL_QUIT) quit = true;
 			if(event.type == SDL_KEYDOWN)
 				switch(event.key.keysym.sym) {

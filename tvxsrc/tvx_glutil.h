@@ -1,4 +1,3 @@
-
 #include "tvxutil.h"
 
 static constexpr int MAX_SHADER_SZ = 65535;
@@ -18,25 +17,25 @@ namespace tvx {
 	// TODO: For some reason, compilation errors are not being caught and instead bad shaders crash at runtime
 
 	GLuint program_from_string(const char *vsString, const char *fsString) {
-		if (!vsString || !fsString) {
-			SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Bad arguments passed to shaderLoadString");
-		}
 
+    if (!vsString || !fsString) {
+			SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Bad arguments passed to shaderLoadString"); fflush(stderr);
+		}
 		GLuint shaderProgram = glCreateProgram();
 		GLuint vsHandle = glCreateShader(GL_VERTEX_SHADER);
 		GLuint fsHandle = glCreateShader(GL_FRAGMENT_SHADER);
-		{
+    		{
 			glShaderSource(vsHandle, 1, &vsString, nullptr);
-			glCompileShader(vsHandle);
-			int params = -1;
+      			glCompileShader(vsHandle);
+      			int params = -1;
 			glGetShaderiv(vsHandle, GL_COMPILE_STATUS, &params);
-			if (GL_TRUE != params) {
-				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "vertex shader index %u did not compile\n", vsHandle);
+      			if (GL_TRUE != params) {
+				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "vertex shader index %u did not compile\n", vsHandle); fflush(stderr);
 				const int maxLength = 2048;
 				int actualLength = 0;
 				char slog[2048];
 				glGetShaderInfoLog(vsHandle, maxLength, &actualLength, slog);
-				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "shader info log for GL index %u:\n%s\n", vsHandle, slog);
+				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "shader info log for GL index %u:\n%s\n", vsHandle, slog);fflush(stderr);
 
 				glDeleteShader(vsHandle);
 				glDeleteShader(fsHandle);
@@ -51,12 +50,12 @@ namespace tvx {
 			int params = -1;
 			glGetShaderiv(fsHandle, GL_COMPILE_STATUS, &params);
 			if (GL_TRUE != params) {
-				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "fragment shader index %u did not compile\n", fsHandle);
+				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "fragment shader index %u did not compile\n", fsHandle);fflush(stderr);
 				const int maxLength = 2048;
 				int actualLength = 0;
 				char slog[2048];
 				glGetShaderInfoLog(fsHandle, maxLength, &actualLength, slog);
-				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "shader info log for GL index %u:\n%s\n", fsHandle, slog);
+				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "shader info log for GL index %u:\n%s\n", fsHandle, slog);fflush(stderr);
 
 				glDeleteShader(vsHandle);
 				glDeleteShader(fsHandle);
