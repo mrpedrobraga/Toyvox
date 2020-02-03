@@ -18,3 +18,13 @@ set( TARGET_NAME ${TARGET_PREFIX}_game )
 add_executable( ${TARGET_NAME}_iris iris_test.cpp )
 target_link_libraries( ${TARGET_NAME}_iris ${TARGET_PREFIX}_interface )
 target_include_directories( ${TARGET_NAME}_iris PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
+
+add_custom_command(
+  TARGET ${TARGET_NAME}_iris POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E create_symlink
+  ${CMAKE_CURRENT_SOURCE_DIR}/native-extensions
+  ${CMAKE_CURRENT_BINARY_DIR}/native-extensions
+  DEPENDS ${destination}
+  COMMENT "symbolic link resources folder from
+  ${CMAKE_CURRENT_SOURCE_DIR}/native-extensions => ${CMAKE_CURRENT_BINARY_DIR}/native-extensions"
+)

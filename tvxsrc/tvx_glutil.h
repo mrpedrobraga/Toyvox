@@ -17,109 +17,62 @@ namespace tvx {
 	// TODO: For some reason, compilation errors are not being caught and instead bad shaders crash at runtime
 
 	GLuint program_from_string(const char *vsString, const char *fsString) {
+		unsigned int vertex, fragment;
+		int success;
+		char infoLog[512];
 
-    if (!vsString || !fsString) {
-			SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Bad arguments passed to shaderLoadString"); fflush(stderr);
+		vertex = glCreateShader(GL_VERTEX_SHADER);
+		glShaderSource(vertex, 1, &vsString, nullptr);
+		glCompileShader(vertex);
+		glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
+		if(!success)
+		{
+			glGetShaderInfoLog(vertex, 512, nullptr, infoLog);
+			std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
 		}
+
+		fragment = glCreateShader(GL_FRAGMENT_SHADER);
+		glShaderSource(fragment, 1, &fsString, nullptr);
+		glCompileShader(fragment);
+		glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
+		if(!success)
+		{
+			glGetShaderInfoLog(fragment, 512, nullptr, infoLog);
+			std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+		}
+
 		GLuint shaderProgram = glCreateProgram();
-		GLuint vsHandle = glCreateShader(GL_VERTEX_SHADER);
-		GLuint fsHandle = glCreateShader(GL_FRAGMENT_SHADER);
-    		{
-			glShaderSource(vsHandle, 1, &vsString, nullptr);
-      			glCompileShader(vsHandle);
-      			int params = -1;
-			glGetShaderiv(vsHandle, GL_COMPILE_STATUS, &params);
-      			if (GL_TRUE != params) {
-				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "vertex shader index %u did not compile\n", vsHandle); fflush(stderr);
-				const int maxLength = 2048;
-				int actualLength = 0;
-				char slog[2048];
-				glGetShaderInfoLog(vsHandle, maxLength, &actualLength, slog);
-				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "shader info log for GL index %u:\n%s\n", vsHandle, slog);fflush(stderr);
-
-				glDeleteShader(vsHandle);
-				glDeleteShader(fsHandle);
-				glDeleteProgram(shaderProgram);
-				return 0;
-			}
-		}
-
+		glAttachShader(shaderProgram, vertex);
+		glAttachShader(shaderProgram, fragment);
+		glLinkProgram(shaderProgram);
+		glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+		if(!success)
 		{
-			glShaderSource(fsHandle, 1, &fsString, nullptr);
-			glCompileShader(fsHandle);
-			int params = -1;
-			glGetShaderiv(fsHandle, GL_COMPILE_STATUS, &params);
-			if (GL_TRUE != params) {
-				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "fragment shader index %u did not compile\n", fsHandle);fflush(stderr);
-				const int maxLength = 2048;
-				int actualLength = 0;
-				char slog[2048];
-				glGetShaderInfoLog(fsHandle, maxLength, &actualLength, slog);
-				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "shader info log for GL index %u:\n%s\n", fsHandle, slog);fflush(stderr);
-
-				glDeleteShader(vsHandle);
-				glDeleteShader(fsHandle);
-				glDeleteProgram(shaderProgram);
-				return 0;
-			}
+			glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+			std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
 		}
 
-		glAttachShader(shaderProgram, fsHandle);
-		glAttachShader(shaderProgram, vsHandle);
-		{
-			glLinkProgram(shaderProgram);
-			glDeleteShader(vsHandle);
-			glDeleteShader(fsHandle);
-			int params = -1;
-			glGetProgramiv(shaderProgram, GL_LINK_STATUS, &params);
-			if (GL_TRUE != params) {
-				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "could not link shader program GL index %u\n", shaderProgram);
-				const int maxLength = 2048;
-				int actualLength = 0;
-				char plog[2048];
-				glGetProgramInfoLog(shaderProgram, maxLength, &actualLength, plog);
-				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "program info log for GL index %u:\n%s", shaderProgram, plog);
-
-				glDeleteProgram(shaderProgram);
-				return 0;
-			}
-		}
-		if ( ! shaderProgram) { SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Failed to create shader!\n"); }
+		glDeleteShader(vertex);
+		glDeleteShader(fragment);
+  	
 		return shaderProgram;
 	}
 
 	GLuint program_from_file(const char *vsFilename, const char *fsFilename) {
-		if (!vsFilename || !fsFilename) {
-			SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Bad arguments passed to shaderLoadFile");
-		}
-
-		char vsString[MAX_SHADER_SZ];
-		char fsString[MAX_SHADER_SZ];
-		vsString[0] = fsString[0] = '\0';
-		{
-			FILE *fp = fopen(("assets/shaders/" + std::string(vsFilename)).c_str(), "r");
-			if (!fp) {
-				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Could not open vertex shader file `%s`\n", vsFilename);
-				return 0;
-			}
-			size_t count = fread(vsString, 1, MAX_SHADER_SZ - 1, fp);
-			if (count >= MAX_SHADER_SZ) { SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Shader size exceeded MAX_SHADER_SZ"); }
-			vsString[count] = '\0';
-			fclose(fp);
-		}
-		{
-			FILE *fp = fopen(("assets/shaders/" + std::string(fsFilename)).c_str(), "r");
-			if (!fp) {
-				SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Could not open fragment shader file `%s`\n", fsFilename);
-				return 0;
-			}
-			size_t count = fread(fsString, 1, MAX_SHADER_SZ - 1, fp);
-			if (count >= MAX_SHADER_SZ) { SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Shader size exceeded MAX_SHADER_SZ");}
-			fsString[count] = '\0';
-			fclose(fp);
-		}
-
-		return program_from_string(vsString, fsString);
+		std::string vertexCode;
+		std::string fragmentCode;
+		std::ifstream vShaderFile;
+		std::ifstream fShaderFile;
+		vShaderFile.open(vsFilename);
+		fShaderFile.open(fsFilename);
+		std::stringstream vShaderStream, fShaderStream;
+		vShaderStream << vShaderFile.rdbuf();
+		fShaderStream << fShaderFile.rdbuf();
+		vShaderFile.close();
+		fShaderFile.close();
+		vertexCode   = vShaderStream.str();
+		fragmentCode = fShaderStream.str();
+		return program_from_string(vertexCode.c_str(), fragmentCode.c_str());
 	}
 
 	void reload_program(GLuint *program, const char *vsFilename, const char *fsFilename) {
