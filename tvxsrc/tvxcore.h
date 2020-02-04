@@ -13,3 +13,5 @@
 #include "tvxutil.h"
 
 #define IRIS_RENDERER
+
+#include "render.h"

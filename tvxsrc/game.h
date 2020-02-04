@@ -1,7 +1,6 @@
 #pragma once
 
 #include "tvxutil.h"
-#include "tvx_glutil.h"
 #include "events.h"
 #include "objects.h"
 #include "display.h"
@@ -40,7 +39,7 @@ namespace tvx::game {
 
 		while( !(current_display).is_closed() && !should_stop )
 		{
-				glClearColor( 0.0f, 0.15f, 0.3f, 1.0f );
+				glClearColor( 0.2f, 0.4f, 0.8f, 1.0f );
 				glClear( GL_COLOR_BUFFER_BIT );
 				(current_display).update();
 		}

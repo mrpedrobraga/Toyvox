@@ -1,3 +1,4 @@
+#pragma once
 #include "tvxutil.h"
 
 static constexpr int MAX_SHADER_SZ = 65535;
@@ -54,7 +55,7 @@ namespace tvx {
 
 		glDeleteShader(vertex);
 		glDeleteShader(fragment);
-  	
+
 		return shaderProgram;
 	}
 

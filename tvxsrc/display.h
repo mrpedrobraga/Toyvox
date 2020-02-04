@@ -1,5 +1,7 @@
 #include <iostream>
-#include <tvxutil.h>
+#include "tvxutil.h"
+#include "tvx_glutil.h"
+#include "render.h"
 
 namespace tvx {
 	class Display
@@ -39,6 +41,8 @@ namespace tvx {
 					printf("Version OpenGL:  %s\n", glGetString(GL_VERSION));
 					printf("Version GLSL:    %s\n\n\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 					fflush(stdout); fflush(stderr);
+
+          program = program_from_file(vertex_shader, pixel_shader);
 	    }
 
 	    bool is_closed()
@@ -48,6 +52,8 @@ namespace tvx {
 
 	    void update()
 	    {
+					glUseProgram(program);
+
 	        SDL_GL_SwapWindow( m_window );
 	        SDL_Event e;
 	        while( SDL_PollEvent( &e ) )
@@ -61,6 +67,8 @@ namespace tvx {
 
 	    ~Display()
 	    {
+					glBindVertexArray(0);
+					glUseProgram(0);
 	        SDL_GL_DeleteContext( m_gl_context );
 	        SDL_DestroyWindow( m_window );
 	        SDL_Quit();
@@ -81,6 +89,12 @@ namespace tvx {
 	private:
 	    SDL_Window* m_window;
 	    SDL_GLContext m_gl_context;
+			GLuint program;
+			GLuint VAO, VBO;
 	    bool m_is_closed;
+			float vertices* = {	-0.5, -0.5, 0.0,
+													+0.5, -0.5, 0.0,
+													+0.5, +0.5, 0.0,
+													-0.5, +0.5, 0.0		};
 	};
 }
