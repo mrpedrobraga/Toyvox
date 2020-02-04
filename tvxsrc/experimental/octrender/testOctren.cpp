@@ -8,13 +8,11 @@
 
 using namespace tvx;
 
-static constexpr uint64_t unifBufSize = 512, voxelBufSize = 65536; // 65536 is minimum spec UBO size
-static constexpr int unifBufType = GL_UNIFORM_BUFFER, voxelBufType = GL_UNIFORM_BUFFER;
+static constexpr uint_fast64_t unifBufSize = 512, unifBufType = GL_UNIFORM_BUFFER, maxVoxLvl = 4;
 static const char *vert = "cover.vert", *frag = "oct.frag";
 
 int main(int argc, char **argv) {
 	SdlContext sdlc("Toyvox Octree Rendering Test");
-	GeneralBuffer<voxelBufSize, voxelBufType>::reportUboSupport();
 	
 	GLuint shaderDisp = shaderLoadFile(vert, frag);
 	bool reloadShader = false, isQuitRequested = false; // CLICK ANYWHERE IN WINDOW TO RELOAD SHADER FROM FILE
@@ -23,7 +21,7 @@ int main(int argc, char **argv) {
 
 	ScreenCoveringTriangle tri;
 	GeneralBuffer<unifBufSize, unifBufType> globals(1);
-	Voxtree<voxelBufSize, voxelBufType, 4> voxtree(0);
+	Voxtree<maxVoxLvl> voxtree(0);
 	voxtree.updateGpu();
 	
 	FreeCamera cam(glm::vec3(0.3, 0.6, 0.1));
@@ -43,6 +41,7 @@ int main(int argc, char **argv) {
 		uniformPackage[1] = cam.getPos();
 		uniformPackage[2] = cam.getRot();
 		uniformPackage[3] = cam.getCtrl();
+		uniformPackage[3].w = maxVoxLvl;
 		globals.writeToCpu<glm::mat4>(0, uniformPackage);
 		globals.sendToGpu();
 		

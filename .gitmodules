@@ -10,3 +10,6 @@
 [submodule "extern/libmorton"]
 	path = extern/libmorton
 	url = https://github.com/forceflow/libmorton
+[submodule "extern/sprout"]
+	path = extern/sprout
+	url = https://github.com/bolero-MURAKAMI/sprout

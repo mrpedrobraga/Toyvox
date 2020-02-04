@@ -1,9 +1,11 @@
 
 #pragma once
 
+#include "sprout/math/pow.hpp"
 #include "extern.hpp"
 #include "morton.h"
 #include "buffers.hpp"
+#include "topics.hpp"
 
 namespace tvx {
 	enum class OctCoordCartesian {
@@ -50,18 +52,20 @@ namespace tvx {
 			 * "true black" which reflects no light, while the extreme lightest value codes for "sky."
 			 */
 	};
-	
-	template<uint64_t bufSize, int bufType, uint32_t maxLvl = 4>
+
+	template<uint_fast64_t maxLvl = 4, uint_fast64_t maxBytes = 65536> // 65536 is spec-required UBO minimum
 	class Voxtree {
-			GeneralBuffer<bufSize, bufType> voxels;
+			static constexpr uint_fast64_t bufType = GL_UNIFORM_BUFFER;
+			static_assert(sprout::pow(8, maxLvl) * sizeof(VoxelDword) < maxBytes, "Max tree depth exceeds memory allotment.");
+			GeneralBuffer<maxBytes, bufType> voxels;
 		public:
-			explicit Voxtree(GLuint binding) : voxels(binding) { }
-			void insert(const VoxelDword &voxel, uint_fast64_t morton) {
-				voxels.template writeToCpu<VoxelDword>(morton, voxel);
+			explicit Voxtree(GLuint binding) : voxels(binding) { GeneralBuffer<maxBytes, bufType>::reportUboSupport(); }
+			void insertLeaf(const VoxelDword &voxel, uint_fast64_t morton) {
+				voxels.template writeToCpu<VoxelDword>(morton + getTrunkSize(), voxel);
 			}
-			void insert(const VoxelDword &voxel, glm::uvec3 pos) {
+			void insertLeaf(const VoxelDword &voxel, glm::uvec3 pos) {
 				uint_fast32_t morton = libmorton::morton3D_32_encode(pos.x, pos.y, pos.z);
-				insert(voxel, morton);
+				insertLeaf(voxel, morton);
 			}
 			void updateGpu() {
 				uint_fast64_t visibleLimit = pow(pow(2, maxLvl), 3);
@@ -72,14 +76,15 @@ namespace tvx {
 					voxel.setRed((7.f / 2.f) * (1 + sinf(cycler)));
 					voxel.setGreen((7.f / 2.f) * (1 + sinf(cycler + M_PIf32 * (2.f / 3.f))));
 					voxel.setBlue((7.f / 2.f) * (1 + sinf(cycler + M_PIf32 * (4.f / 3.f))));
-					insert(voxel, i);
+					insertLeaf(voxel, i);
 				}
 				for (uint_fast64_t i = visibleLimit; i < voxels.template getCapacity<VoxelDword>(); ++i) {
 					VoxelDword voxel;
 					voxel.setIsFilled(false);
-					insert(voxel, i);
+					insertLeaf(voxel, i);
 				}
 				voxels.sendToGpu();
 			}
+			[[nodiscard]] inline uint_fast32_t getTrunkSize() const { return (pow(8, maxLvl) - 1) / 7; }
 	};
 }

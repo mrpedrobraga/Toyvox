@@ -78,17 +78,18 @@ const uint mortonZ[256] = {
 #define vox_brick 3
 #define epsilon 0.001// decrease further for finer detail
 
-layout (std140, binding = 0) uniform shader_data {
-	vec4 buf[4096];// pack any data into vec4 to make full use of the aligned storage
-};
 layout (location = 0) in vec2 resIn;
 layout (location = 1) in float timeIn;
 layout (location = 2) in float dtIn;
 layout (location = 3) in vec4 camPosIn;
 layout (location = 4) in vec4 camRotIn;
 layout (location = 5) in vec4 controlsIn;
+layout (std140, binding = 0) uniform packedVoxels { vec4 buf[4096]; };
 layout (location = 0) out vec4 fsOut;
-layout (binding = 0) uniform sampler2D dataTex;
+
+uint trunkOffset(float lvl) {
+	return uint((pow(8., lvl) - 1.) / 7.);
+}
 
 void morton32(out uint morton, uint x, uint y, uint z){
 	morton = 0;
@@ -106,9 +107,10 @@ void mortonVoxelDword(out uint mortonVoxel, uint uDwordIdx) {
 	mortonVoxel = floatBitsToUint(buf[uDwordIdx / 4][uDwordIdx % 4]);
 }
 
-void voxelDwordGet(out uint voxel, uint x, uint y, uint z) {
+void voxelDwordGet(out uint voxel, uint lvl, uint x, uint y, uint z) {
 	uint mortonIdx;
 	morton16(mortonIdx, x, y, z);
+	mortonIdx += trunkOffset(lvl);
 	mortonVoxelDword(voxel, mortonIdx);
 }
 bool vdGetIsFilled(uint voxel) { return bool(voxel & 0x100u); }
@@ -117,20 +119,27 @@ float vdGetGreen(uint voxel) { return float((voxel & 0xE000u) >> 13u) / 7.0; }
 float vdGetBlue(uint voxel) { return float((voxel & 0x70000u) >> 16u) / 7.0; }
 
 uint fetchVoxel(vec3 p, float size, inout uint voxel) {
-	int xp = int(p.x * 2);
-	int yp = int(p.y * 2);
-	int zp = int(p.z * 2);
-	int lv = int(log2(1.0 / size) - 1.0);
-	int head = lv != 0 ? 8 : 0;
-	if (lv == 3) {
-		uvec3 pos = uvec3(p * 16);
-		voxelDwordGet(voxel, pos.x, pos.y, pos.z);
+	uvec3 pos = uvec3(p * 16);
+	uint lv = uint(log2(1.0 / size));
+	if (lv >= controlsIn.w) {
+		voxelDwordGet(voxel, uint(controlsIn.w), pos.x, pos.y, pos.z);
 		if (vdGetIsFilled(voxel)) {
 			return vox_brick;
 		} else {
 			return vox_empty;
 		}
 	}
+//	int xp = int(p.x * 2);
+//	int yp = int(p.y * 2);
+//	int zp = int(p.z * 2);
+	
+//	voxelDwordGet(voxel, lv, pos.x, pos.y, pos.z);
+//	if (vdGetIsFilled(voxel)) {
+//		return vox_subd;
+//	} else {
+//		return vox_nil;
+//	}
+	
 	return vox_subd;
 }
 
