@@ -75,8 +75,8 @@ namespace tvx {
 				// program to the full screen quad's vertex data stored in the vertex
 				// buffer object.
 
-				glVertexAttribPointer("PositionNDC", 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-				glEnableVertexAttribArray("PositionNDC");
+				glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+				glEnableVertexAttribArray(0);
 
 				glBindVertexArray(0);
 			}
@@ -84,9 +84,6 @@ namespace tvx {
 	    void update()
 	    {
 					glUseProgram(program);
-
-			    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-			    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 					glBindVertexArray(m_vertexArrayObject);
 

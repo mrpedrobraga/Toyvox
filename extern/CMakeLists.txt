@@ -16,9 +16,6 @@ extern( link SDL2-static )
 add_subdirectory( glm )
 extern( link glm )
 
-add_subdirectory( stb )
-extern( link stb )
-
 add_library( octree STATIC
   simpleoctree/src/Pool.hpp simpleoctree/src/Pool.cpp
   simpleoctree/src/Octree.hpp simpleoctree/src/Octree.cpp

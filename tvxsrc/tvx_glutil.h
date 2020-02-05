@@ -18,7 +18,8 @@ namespace tvx {
 	// TODO: For some reason, compilation errors are not being caught and instead bad shaders crash at runtime
 
 	GLuint program_from_string(const char *vsString, const char *fsString) {
-		unsigned int vertex, fragment;
+
+    unsigned int vertex, fragment;
 		int success;
 		char infoLog[512];
 
@@ -54,7 +55,6 @@ namespace tvx {
 		}
 
 		glDeleteShader(vertex);
-    glDeleteShader(geometry);
 		glDeleteShader(fragment);
 
 		return shaderProgram;
@@ -63,18 +63,20 @@ namespace tvx {
 	GLuint program_from_file(const char *vsFilename, const char *fsFilename) {
 		std::string vertexCode;
 		std::string fragmentCode;
-		std::ifstream vShaderFile;
-		std::ifstream fShaderFile;
-		vShaderFile.open(vsFilename);
-		fShaderFile.open(fsFilename);
-		std::stringstream vShaderStream, fShaderStream;
-		vShaderStream << vShaderFile.rdbuf();
-		fShaderStream << fShaderFile.rdbuf();
-		vShaderFile.close();
-		fShaderFile.close();
-		vertexCode   = vShaderStream.str();
-		fragmentCode = fShaderStream.str();
-		return program_from_string(vertexCode.c_str(), fragmentCode.c_str(), geometryCode.c_str());
+
+    fragmentCode = "#version 400 core\n"
+    "layout(origin_upper_left) in vec4 gl_FragCoord;\n"
+    "void main() {\n"
+    "    gl_FragColor = vec4(gl_FragCoord.x / 640.0, gl_FragCoord.y / 640.0, 1.0, 1.0);"
+    "}\n";
+
+    vertexCode = "#version 400 core\n"
+    "layout(location = 0) in vec4 in_position;\n"
+    "void main() {\n"
+    "    gl_Position = in_position;"
+    "}\n";
+
+		return program_from_string(vertexCode.c_str(), fragmentCode.c_str());
 	}
 
 	void reload_program(GLuint *program, const char *vsFilename, const char *fsFilename) {
