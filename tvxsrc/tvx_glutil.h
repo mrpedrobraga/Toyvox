@@ -66,8 +66,9 @@ namespace tvx {
 
     fragmentCode = "#version 400 core\n"
     "layout(origin_upper_left) in vec4 gl_FragCoord;\n"
+    "uniform float time;\n"
     "void main() {\n"
-    "    gl_FragColor = vec4(gl_FragCoord.x / 640.0, gl_FragCoord.y / 640.0, 1.0, 1.0);"
+    "    gl_FragColor = vec4(gl_FragCoord.x / 640.0, gl_FragCoord.y / 360.0, sin(time), 1.0);"
     "}\n";
 
     vertexCode = "#version 400 core\n"

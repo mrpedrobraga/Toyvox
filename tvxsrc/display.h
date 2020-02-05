@@ -85,13 +85,13 @@ namespace tvx {
 	    {
 					glUseProgram(program);
 
+					glUniform1f(glGetUniformLocation(program, "time"), wall_clock_time());
+
 					glBindVertexArray(m_vertexArrayObject);
-
 					glDrawArrays(GL_TRIANGLE_STRIP, 0, 8);
-
 					glBindVertexArray(0);
 
-	        SDL_GL_SwapWindow( m_window );
+					SDL_GL_SwapWindow( m_window );
 	        SDL_Event e;
 	        while( SDL_PollEvent( &e ) )
 	        {

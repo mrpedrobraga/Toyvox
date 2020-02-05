@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
+#include <chrono>
 
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
@@ -67,3 +68,9 @@ using Voxel = uint32_t;
 #   define sleep(n) std::this_thread::sleep_for(std::chrono::milliseconds(n))
 # endif
 #endif
+
+std::chrono::steady_clock::time_point program_beginning = std::chrono::steady_clock::now();
+
+auto wall_clock_time(){
+  return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - program_beginning).count();
+}
