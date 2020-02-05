@@ -39,7 +39,7 @@ namespace tvx {
 		if(!success)
 		{
 			glGetShaderInfoLog(fragment, 512, nullptr, infoLog);
-			std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+			std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
 		}
 
 		GLuint shaderProgram = glCreateProgram();
@@ -54,6 +54,7 @@ namespace tvx {
 		}
 
 		glDeleteShader(vertex);
+    glDeleteShader(geometry);
 		glDeleteShader(fragment);
 
 		return shaderProgram;
@@ -73,7 +74,7 @@ namespace tvx {
 		fShaderFile.close();
 		vertexCode   = vShaderStream.str();
 		fragmentCode = fShaderStream.str();
-		return program_from_string(vertexCode.c_str(), fragmentCode.c_str());
+		return program_from_string(vertexCode.c_str(), fragmentCode.c_str(), geometryCode.c_str());
 	}
 
 	void reload_program(GLuint *program, const char *vsFilename, const char *fsFilename) {

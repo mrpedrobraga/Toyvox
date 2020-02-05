@@ -1,3 +1,7 @@
+#pragma once
+
+#include "tvxoptions.h"
+
 #include <cstdarg>
 #include <cstdlib>
 #include <cmath>
@@ -32,6 +36,27 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+void errorlog(const char* x) {printf(x);}
+
+/* Available renderers */
+
+const char* pixel_shader_path;
+const char* vertex_shader_path;
+
+void define_shaders();
+
+#ifdef IRIS_RENDERER
+  void define_shaders()
+  {
+    pixel_shader_path = "native_extensions/iris_renderer/colour.glsl";
+    vertex_shader_path = "native_extensions/iris_renderer/vertex.glsl";
+  }
+#else
+  #warning "[Fatal] No renderer selected. To use the default renderer, define IRIS_RENDERER."
+#endif
+
+using Voxel = uint32_t;
 
 #ifdef WIN32
 # define WINDOWS_THREADS //If you're using windows threads

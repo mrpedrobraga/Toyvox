@@ -51,6 +51,20 @@ namespace tvx
 		TVX_2D_CAMERA,
 	};
 
+	class Camera {
+	private:
+		CameraType m_type;
+		glm::vec3 m_scale; //(!) Width, Height and Plane Distance, in this order!!!
+		glm::vec2 m_culling; //Minimum and maximum render distance.
+		float m_episilon; //Minimum step a photon will make while rendering.
+
+		float m_lens_width;
+	public:
+		Camera(CameraType _type, glm::vec3 _scale, glm::vec2 _cul, float epsilon):
+			m_type(_type), m_scale(_scale), m_culling(_cul), m_episilon(epsilon){}
+		~Camera(){}
+	};
+
 	//This class hold many components on a list!
 	template<class Type>
 	struct ComponentSet //Also densely packed! See EntityHandler to see how this works!

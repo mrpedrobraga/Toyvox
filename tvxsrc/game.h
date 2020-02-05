@@ -32,7 +32,7 @@ namespace tvx::game {
 	void set_title(std::string title) { game_title = std::move(title); }
 
 	void init() {
-
+		current_display.init();
 	}
 
 	void run() {
