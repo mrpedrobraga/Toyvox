@@ -12,6 +12,55 @@ namespace tvx {
 			ScreenCoveringTriangle();
 			[[nodiscard]] GLuint getVao() const;
 	};
+
+	template<uint_fast64_t size, int width, int height, int inFormat, int storeFormat, int type, int filter>
+	class DataTexture {
+			uint8_t cpuData[size] = {};
+			GLuint tex = 0;
+		public:
+			explicit DataTexture(uint8_t *data = nullptr) {
+				glGenTextures(1, &tex);
+				glBindTexture(GL_TEXTURE_2D, tex);
+				glTexImage2D(GL_TEXTURE_2D, 0, storeFormat, width, height, 0, inFormat, type, data ? data : nullptr);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+			}
+			~DataTexture() {
+				glDeleteTextures(1, &tex);
+			}
+			void use(GLenum unit) {
+				glActiveTexture(GL_TEXTURE0 + unit);
+				glBindTexture(GL_TEXTURE_2D, tex);
+			}
+			void sendToGpu(uint8_t *data, uint_fast64_t byteOffset, uint_fast64_t byteLength) {
+				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, inFormat, type, data);
+			}
+			void sendToGpu() {
+				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, inFormat, type, cpuData);
+			}
+			template<typename T>
+			[[nodiscard]] uint_fast64_t getCapacity() const {
+				return size / sizeof(T);
+			}
+			template<typename T>
+			bool writeToCpu(uint_fast64_t idx, uint_fast64_t num, T const *data) {
+				if ( idx < 0 || num <= 0 || ! data) { return false;}
+				if (idx * sizeof(T) + num * sizeof(T) >= size) { return false; }
+				memcpy(&reinterpret_cast<T *>(cpuData)[idx], data, num * sizeof(T));
+				return true;
+			}
+			template<typename T>
+			bool writeToCpu(uint_fast64_t idx, const T &data) {
+				return writeToCpu<T>(idx, 1, &data);
+			}
+			template<typename T>
+			T *cpu(uint_fast64_t idx) {
+				if (idx < 0 || idx * sizeof(T) + sizeof(T) > size) {
+					return nullptr;
+				}
+				return &reinterpret_cast<T *>(cpuData)[idx];
+			}
+	};
 	
 	template<int format, int type, int filter, bool depth = false>
 	class IntermediateTexture {
@@ -58,7 +107,7 @@ namespace tvx {
 			}
 	};
 	
-	template<uint64_t size, int bufType>
+	template<uint_fast64_t size, int bufType>
 	class GeneralBuffer {
 			uint8_t cpuData[size] = {};
 			GLuint handle = 0;
@@ -75,19 +124,26 @@ namespace tvx {
 				glDeleteBuffers(1, &handle);
 			}
 			template<typename T>
-			[[nodiscard]] uint64_t getCapacity() const {
+			[[nodiscard]] uint_fast64_t getCapacity() const {
 				return size / sizeof(T);
 			}
 			template<typename T>
-			bool writeToCpu(uint64_t idx, uint64_t num, T const *data) {
+			bool writeToCpu(uint_fast64_t idx, uint_fast64_t num, T const *data) {
 				if ( idx < 0 || num <= 0 || ! data) { return false;}
 				if (idx * sizeof(T) + num * sizeof(T) >= size) { return false; }
 				memcpy(&reinterpret_cast<T *>(cpuData)[idx], data, num * sizeof(T));
 				return true;
 			}
 			template<typename T>
-			bool writeToCpu(uint64_t idx, const T &data) {
+			bool writeToCpu(uint_fast64_t idx, const T &data) {
 				return writeToCpu<T>(idx, 1, &data);
+			}
+			template<typename T>
+			T *cpu(uint_fast64_t idx) {
+				if (idx < 0 || idx * sizeof(T) + sizeof(T) > size) {
+					return nullptr;
+				}
+				return &reinterpret_cast<T *>(cpuData)[idx];
 			}
 			void sendToGpu() {
 				glBindBuffer(bufType, handle);

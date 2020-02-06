@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
 
 	ScreenCoveringTriangle tri;
 	GeneralBuffer<unifBufSize, unifBufType> globals(1);
-	Voxtree<maxVoxLvl> voxtree(0);
+	Voxtree<maxVoxLvl> voxtree(0, 2);
 	voxtree.updateGpu();
 	
 	FreeCamera cam(glm::vec3(0.3, 0.6, 0.1));

@@ -14,7 +14,6 @@ layout (std140, binding = 1) uniform global {
   vec4 camPos;
   vec4 camRot;
   vec4 controls;
-  
 };
 
 void main() {

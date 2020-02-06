@@ -78,6 +78,7 @@ const uint mortonZ[256] = {
 #define vox_brick 3
 #define epsilon 0.001// decrease further for finer detail
 
+uniform sampler2D tex;
 layout (location = 0) in vec2 resIn;
 layout (location = 1) in float timeIn;
 layout (location = 2) in float dtIn;
@@ -87,7 +88,7 @@ layout (location = 5) in vec4 controlsIn;
 layout (std140, binding = 0) uniform packedVoxels { vec4 buf[4096]; };
 layout (location = 0) out vec4 fsOut;
 
-uint trunkOffset(float lvl) {
+uint leavesStart(float lvl) {
 	return uint((pow(8., lvl) - 1.) / 7.);
 }
 
@@ -103,37 +104,48 @@ void morton16(out uint morton, uint x, uint y, uint z){
 	morton = morton << 24 | mortonZ[z & 0xFFu] | mortonY[y & 0xFFu] | mortonX[x & 0xFFu];
 }
 void morton8(out uint morton, uint x, uint y, uint z) { morton = mortonZ[z] | mortonY[y] | mortonX[x]; }
-void mortonVoxelDword(out uint mortonVoxel, uint uDwordIdx) {
-	mortonVoxel = floatBitsToUint(buf[uDwordIdx / 4][uDwordIdx % 4]);
+void mortonVoxelDword(out uint mortonVoxel, uint mortonIdx) {
+	mortonVoxel = floatBitsToUint(buf[mortonIdx / 4][mortonIdx % 4]);
+	
+////	uint idx = mortonIdx / 4;
+////	uint off = mortonIdx % 4;
+////	mortonVoxel = floatBitsToUint(texelFetch(tex, ivec2(idx % 2048, idx / 2048), 0)[off]);
+//	
+//	vec4 fd = texelFetch(tex, ivec2(mortonIdx % 2048, mortonIdx / 2048), 0);
+//	uvec4 ud = uvec4(floatBitsToUint(fd.r), floatBitsToUint(fd.g), floatBitsToUint(fd.b), floatBitsToUint(fd.a));
+//	mortonVoxel = ud.r << 16 | ud.g << 8 | ud.b << 0 | ud.a << 24;
+//	
+////	uint fu = ud.r & 0x40u;
+////	mortonVoxel = fu << 0 | fu << 8 | fu << 16 | fu << 24;
+////	mortonVoxel = ud.r & 0x40u;
 }
 
-void voxelDwordGet(out uint voxel, uint lvl, uint x, uint y, uint z) {
+void leafDwordGet(out uint voxel, uint lvl, uint x, uint y, uint z) {
 	uint mortonIdx;
 	morton16(mortonIdx, x, y, z);
-	mortonIdx += trunkOffset(lvl);
+//	mortonIdx += leavesStart(lvl);
 	mortonVoxelDword(voxel, mortonIdx);
 }
-bool vdGetIsFilled(uint voxel) { return bool(voxel & 0x100u); }
-float vdGetRed(uint voxel) { return float((voxel & 0x1C00u) >> 10u) / 7.0; }
-float vdGetGreen(uint voxel) { return float((voxel & 0xE000u) >> 13u) / 7.0; }
-float vdGetBlue(uint voxel) { return float((voxel & 0x70000u) >> 16u) / 7.0; }
+float vdGetRed(uint voxel) { return float((voxel & 0xE000u) >> 13u) / 7.0; }
+float vdGetGreen(uint voxel) { return float((voxel & 0x70000u) >> 16u) / 7.0; }
+float vdGetBlue(uint voxel) { return float((voxel & 0x380000u) >> 19u) / 7.0; }
+bool vdGetIsFilled(uint voxel) { return bool(voxel & 0x400000u); }
 
 uint fetchVoxel(vec3 p, float size, inout uint voxel) {
 	uvec3 pos = uvec3(p * 16);
 	uint lv = uint(log2(1.0 / size));
 	if (lv >= controlsIn.w) {
-		voxelDwordGet(voxel, uint(controlsIn.w), pos.x, pos.y, pos.z);
+		leafDwordGet(voxel, uint(controlsIn.w), pos.x, pos.y, pos.z);
 		if (vdGetIsFilled(voxel)) {
 			return vox_brick;
 		} else {
 			return vox_empty;
 		}
 	}
+	
 //	int xp = int(p.x * 2);
 //	int yp = int(p.y * 2);
 //	int zp = int(p.z * 2);
-	
-//	voxelDwordGet(voxel, lv, pos.x, pos.y, pos.z);
 //	if (vdGetIsFilled(voxel)) {
 //		return vox_subd;
 //	} else {
@@ -235,4 +247,24 @@ void main() {
 	fsOut = sqrt(fsOut);
 	
 	fsOut.rgb = pow(fsOut.rgb, vec3(1./2.2));
+	
+	
+	
+	
+//	float c =  texture2D(tex, gl_FragCoord.xy / vec2(resIn.x, resIn.y * 256))[3];
+//	fsOut = vec4(c, c, c, 1);
+	
+	
+//	uint mortonIdx;
+//	uvec3 samp =  uvec3(gl_FragCoord.x / 16, uint(timeIn * 2.) % 16, gl_FragCoord.y / 16);
+//	morton16(mortonIdx, samp.x, samp.y, samp.z);
+//	
+////	mortonVoxelDword(voxel, mortonIdx);
+////	fsOut = vec4(vdGetRed(voxel), vdGetGreen(voxel), vdGetBlue(voxel), 1.) /** float(vdGetIsFilled(voxel))*/;
+//	vec4 fd = texelFetch(tex, ivec2(mortonIdx % 2048, mortonIdx / 2048), 0);
+//	uvec4 ud = uvec4(floatBitsToUint(fd.g), floatBitsToUint(fd.r), floatBitsToUint(fd.a), 255);
+//	fsOut = vec4(ud / 255);
+	
+	
+	
 }
