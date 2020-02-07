@@ -16,9 +16,9 @@ namespace tvx {
 	}
 
 	FreeCamera::FreeCamera(
-				const glm::vec3 &start, const std::string &fw, const std::string &bw,
+				uint_fast64_t maxLvl, const glm::vec3 &start, const std::string &fw, const std::string &bw,
 				const std::string &lf, const std::string &rt, const std::string &up, const std::string &dn)
-				: rot(), pos(glm::vec4(start, 1.f)), ctrl(),
+				: rot(), pos(glm::vec4(start, 1.f)), ctrl(1, 1, 0, maxLvl), curLvl(maxLvl), maxLvl(maxLvl),
 				  mouseMoveSub("mouse_moved", [&](void *data) -> void {
 					  auto e = reinterpret_cast<SDL_Event *>(data);
 					  yaw += e->motion.xrel * dt * sensitivity * aspect;
@@ -38,9 +38,13 @@ namespace tvx {
 				  }),
 				  upDetSub("mouse_down_x1", [&](void *data) -> void {
 					  ctrl.x = -1;
+					  if (--curLvl < 1) { curLvl += this->maxLvl; }
+					  ctrl.w = curLvl;
 				  }),
 				  dnDetSub("mouse_down_x2", [&](void *data) -> void {
 					  ctrl.y = -1;
+					  if (++curLvl > this->maxLvl) { curLvl -= this->maxLvl; }
+					  ctrl.w = curLvl;
 				  }),
 				  gridSub("mouse_wheel", [&](void *data) -> void {
 				  	auto val = reinterpret_cast<int*>(data);

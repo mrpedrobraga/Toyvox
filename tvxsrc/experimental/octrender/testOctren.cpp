@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
 	Voxtree<maxVoxLvl> voxtree(0, 2);
 	voxtree.updateGpu();
 	
-	FreeCamera cam(glm::vec3(0.3, 0.6, 0.1));
+	FreeCamera cam(maxVoxLvl ,glm::vec3(0.3, 0.6, 0.1));
 	cam.setAspect(static_cast<float>(sdlc.getWindowWidth()) / static_cast<float>(sdlc.getWindowHeight()));
 	
 	float time = 0.f;
@@ -41,7 +41,6 @@ int main(int argc, char **argv) {
 		uniformPackage[1] = cam.getPos();
 		uniformPackage[2] = cam.getRot();
 		uniformPackage[3] = cam.getCtrl();
-		uniformPackage[3].w = maxVoxLvl;
 		globals.writeToCpu<glm::mat4>(0, uniformPackage);
 		globals.sendToGpu();
 		

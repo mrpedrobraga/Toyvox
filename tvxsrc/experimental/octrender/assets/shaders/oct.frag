@@ -70,15 +70,15 @@ const uint mortonZ[256] = {
 0x924000, 0x924004, 0x924020, 0x924024, 0x924100, 0x924104, 0x924120, 0x924124, 0x924800, 0x924804, 0x924820, 0x924824,
 0x924900, 0x924904, 0x924920, 0x924924 };
 
-#define steps 1000
+#define max_lvl 4
+#define steps 100
 #define datapixels 6
 #define vox_nil 0
 #define vox_subd 1
 #define vox_empty 2
 #define vox_brick 3
-#define epsilon 0.001// decrease further for finer detail
 
-uniform sampler2D tex;
+uniform usamplerBuffer buftex;
 layout (location = 0) in vec2 resIn;
 layout (location = 1) in float timeIn;
 layout (location = 2) in float dtIn;
@@ -87,10 +87,6 @@ layout (location = 4) in vec4 camRotIn;
 layout (location = 5) in vec4 controlsIn;
 layout (std140, binding = 0) uniform packedVoxels { vec4 buf[4096]; };
 layout (location = 0) out vec4 fsOut;
-
-uint leavesStart(float lvl) {
-	return uint((pow(8., lvl) - 1.) / 7.);
-}
 
 void morton32(out uint morton, uint x, uint y, uint z){
 	morton = 0;
@@ -104,55 +100,43 @@ void morton16(out uint morton, uint x, uint y, uint z){
 	morton = morton << 24 | mortonZ[z & 0xFFu] | mortonY[y & 0xFFu] | mortonX[x & 0xFFu];
 }
 void morton8(out uint morton, uint x, uint y, uint z) { morton = mortonZ[z] | mortonY[y] | mortonX[x]; }
-void mortonVoxelDword(out uint mortonVoxel, uint mortonIdx) {
-	mortonVoxel = floatBitsToUint(buf[mortonIdx / 4][mortonIdx % 4]);
-	
-////	uint idx = mortonIdx / 4;
-////	uint off = mortonIdx % 4;
-////	mortonVoxel = floatBitsToUint(texelFetch(tex, ivec2(idx % 2048, idx / 2048), 0)[off]);
-//	
-//	vec4 fd = texelFetch(tex, ivec2(mortonIdx % 2048, mortonIdx / 2048), 0);
-//	uvec4 ud = uvec4(floatBitsToUint(fd.r), floatBitsToUint(fd.g), floatBitsToUint(fd.b), floatBitsToUint(fd.a));
-//	mortonVoxel = ud.r << 16 | ud.g << 8 | ud.b << 0 | ud.a << 24;
-//	
-////	uint fu = ud.r & 0x40u;
-////	mortonVoxel = fu << 0 | fu << 8 | fu << 16 | fu << 24;
-////	mortonVoxel = ud.r & 0x40u;
+
+uint lvlStart(float lvl) { return uint((pow(8., lvl) - 1.) / 7.); }
+
+void octDwordGet(out uint voxel, uint lvl, uint x, uint y, uint z) {
+	uint invLvl = uint(controlsIn.w) - lvl;
+	uint lvlOffset = lvlStart(invLvl) + lvlStart(max_lvl);
+	uint distMult = uint(1 / pow(2, invLvl));
+	uint mortonIdx;
+	morton16(mortonIdx, x * distMult, y * distMult, z * distMult);
+	mortonIdx += lvlOffset;
+	voxel = texelFetch(buftex, int(mortonIdx)).r;
 }
 
-void leafDwordGet(out uint voxel, uint lvl, uint x, uint y, uint z) {
-	uint mortonIdx;
-	morton16(mortonIdx, x, y, z);
-//	mortonIdx += leavesStart(lvl);
-	mortonVoxelDword(voxel, mortonIdx);
-}
 float vdGetRed(uint voxel) { return float((voxel & 0xE000u) >> 13u) / 7.0; }
 float vdGetGreen(uint voxel) { return float((voxel & 0x70000u) >> 16u) / 7.0; }
 float vdGetBlue(uint voxel) { return float((voxel & 0x380000u) >> 19u) / 7.0; }
 bool vdGetIsFilled(uint voxel) { return bool(voxel & 0x400000u); }
+bool vdGetHasChildren(uint voxel) { return bool(voxel & 0xFFu); }
+bool vdGetChildrenFull(uint voxel) { return (voxel & 0xFFu) == 0xFFu; }
 
 uint fetchVoxel(vec3 p, float size, inout uint voxel) {
-	uvec3 pos = uvec3(p * 16);
 	uint lv = uint(log2(1.0 / size));
+	uvec3 pos = uvec3(p * max_lvl * max_lvl);
+	uint fetchedVoxel;
+	octDwordGet(fetchedVoxel, uint(controlsIn.w), pos.x, pos.y, pos.z);	
 	if (lv >= controlsIn.w) {
-		leafDwordGet(voxel, uint(controlsIn.w), pos.x, pos.y, pos.z);
-		if (vdGetIsFilled(voxel)) {
-			return vox_brick;
-		} else {
-			return vox_empty;
-		}
+		voxel = fetchedVoxel;
+		if (vdGetIsFilled(voxel)) { return vox_brick; }
+		else { return vox_empty; }
+	}	else {
+		return vox_subd;
+//		if (vdGetIsFilled(fetchedVoxel)) {
+//			return vox_subd;
+//		} else {
+//			return vox_empty;
+//		}
 	}
-	
-//	int xp = int(p.x * 2);
-//	int yp = int(p.y * 2);
-//	int zp = int(p.z * 2);
-//	if (vdGetIsFilled(voxel)) {
-//		return vox_subd;
-//	} else {
-//		return vox_nil;
-//	}
-	
-	return vox_subd;
 }
 
 vec3 voxelHit(vec3 ro, vec3 rd, float size) {
@@ -161,7 +145,7 @@ vec3 voxelHit(vec3 ro, vec3 rd, float size) {
 	return hit;
 }
 
-vec4 rayMarch(vec3 raySrc, vec3 rayDir, float maxdist, float eps, out vec4 hitclass, inout uint voxel) {
+vec4 rayMarch(vec3 raySrc, vec3 rayDir, float maxdist, out vec4 hitclass, inout uint voxel) {
 	hitclass = vec4(1.0);
 	
 	float childSize = 0.5, dist = 0.0;
@@ -174,7 +158,7 @@ vec4 rayMarch(vec3 raySrc, vec3 rayDir, float maxdist, float eps, out vec4 hitcl
 	
 	for (int curStep = 0; curStep < steps; ++curStep) {
 		
-		if (dist > maxdist) { break; }
+		if (dist >= maxdist) { break; }
 		if (recurr == recur) { vec3 q = mod(floor(raySrcInCur / childSize + 0.5) + 0.5, 2.0) - 0.5; }
 		int voxFound = 0;
 		if (recurrr == recur) { curVoxFound = int(fetchVoxel(raySrcInCur, childSize, voxel)); }
@@ -237,7 +221,7 @@ void main() {
 	
 	vec4 hitclass = vec4(0.0);
 	uint voxel = 0;
-	vec4 hit = rayMarch(camPosIn.xyz, rayDir, 4.0, epsilon, hitclass, voxel);
+	vec4 hit = rayMarch(camPosIn.xyz, rayDir, 4.0, hitclass, voxel);
 	if (vdGetIsFilled(voxel)) { fsOut.xyz = vec3(vdGetRed(voxel), vdGetGreen(voxel), vdGetBlue(voxel)); }
 	else { fsOut.xyz = vec3(0.2, 0.2, 0.2); }
 	
@@ -246,25 +230,5 @@ void main() {
 	else if (controlsIn.z == 2.0 && vdGetIsFilled(voxel)) { fsOut.xyz = abs(hit.yzw); } // normals view
 	fsOut = sqrt(fsOut);
 	
-	fsOut.rgb = pow(fsOut.rgb, vec3(1./2.2));
-	
-	
-	
-	
-//	float c =  texture2D(tex, gl_FragCoord.xy / vec2(resIn.x, resIn.y * 256))[3];
-//	fsOut = vec4(c, c, c, 1);
-	
-	
-//	uint mortonIdx;
-//	uvec3 samp =  uvec3(gl_FragCoord.x / 16, uint(timeIn * 2.) % 16, gl_FragCoord.y / 16);
-//	morton16(mortonIdx, samp.x, samp.y, samp.z);
-//	
-////	mortonVoxelDword(voxel, mortonIdx);
-////	fsOut = vec4(vdGetRed(voxel), vdGetGreen(voxel), vdGetBlue(voxel), 1.) /** float(vdGetIsFilled(voxel))*/;
-//	vec4 fd = texelFetch(tex, ivec2(mortonIdx % 2048, mortonIdx / 2048), 0);
-//	uvec4 ud = uvec4(floatBitsToUint(fd.g), floatBitsToUint(fd.r), floatBitsToUint(fd.a), 255);
-//	fsOut = vec4(ud / 255);
-	
-	
-	
+	fsOut.rgb = pow(fsOut.rgb, vec3(1./2.2));		
 }
