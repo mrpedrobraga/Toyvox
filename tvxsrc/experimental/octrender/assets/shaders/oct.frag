@@ -70,14 +70,6 @@ const uint mortonZ[256] = {
 0x924000, 0x924004, 0x924020, 0x924024, 0x924100, 0x924104, 0x924120, 0x924124, 0x924800, 0x924804, 0x924820, 0x924824,
 0x924900, 0x924904, 0x924920, 0x924924 };
 
-#define max_lvl 4
-#define steps 100
-#define datapixels 6
-#define vox_nil 0
-#define vox_subd 1
-#define vox_empty 2
-#define vox_brick 3
-
 uniform usamplerBuffer buftex;
 layout (location = 0) in vec2 resIn;
 layout (location = 1) in float timeIn;
@@ -87,6 +79,14 @@ layout (location = 4) in vec4 camRotIn;
 layout (location = 5) in vec4 controlsIn;
 layout (std140, binding = 0) uniform packedVoxels { vec4 buf[4096]; };
 layout (location = 0) out vec4 fsOut;
+
+#define max_lvl uint(camPosIn.w)
+#define cur_lvl uint(controlsIn.w)
+#define steps 100
+#define vox_nil 0
+#define vox_subd 1
+#define vox_empty 2
+#define vox_brick 3
 
 void morton32(out uint morton, uint x, uint y, uint z){
 	morton = 0;
@@ -104,9 +104,13 @@ void morton8(out uint morton, uint x, uint y, uint z) { morton = mortonZ[z] | mo
 uint lvlStart(float lvl) { return uint((pow(8., lvl) - 1.) / 7.); }
 
 void octDwordGet(out uint voxel, uint lvl, uint x, uint y, uint z) {
-	uint invLvl = uint(controlsIn.w) - lvl;
-	uint lvlOffset = lvlStart(invLvl) + lvlStart(max_lvl);
-	uint distMult = uint(1 / pow(2, invLvl));
+	uint invLvl = cur_lvl - lvl;
+	uint lvlOffset = 0, distMult = 1;
+	if (max_lvl == cur_lvl) { lvlOffset += lvlStart(invLvl) + lvlStart(max_lvl); }
+	else {
+		lvlOffset += lvlStart(invLvl);
+		distMult /= uint(pow(8, invLvl));
+	}
 	uint mortonIdx;
 	morton16(mortonIdx, x * distMult, y * distMult, z * distMult);
 	mortonIdx += lvlOffset;
@@ -122,20 +126,18 @@ bool vdGetChildrenFull(uint voxel) { return (voxel & 0xFFu) == 0xFFu; }
 
 uint fetchVoxel(vec3 p, float size, inout uint voxel) {
 	uint lv = uint(log2(1.0 / size));
-	uvec3 pos = uvec3(p * max_lvl * max_lvl);
-	uint fetchedVoxel;
-	octDwordGet(fetchedVoxel, uint(controlsIn.w), pos.x, pos.y, pos.z);	
-	if (lv >= controlsIn.w) {
-		voxel = fetchedVoxel;
+	if (lv >= cur_lvl) {
+//		uvec3 pos = uvec3(p * max_lvl * max_lvl);
+		uvec3 pos = uvec3(p * cur_lvl * cur_lvl);
+		octDwordGet(voxel, cur_lvl, pos.x, pos.y, pos.z);
 		if (vdGetIsFilled(voxel)) { return vox_brick; }
 		else { return vox_empty; }
 	}	else {
-		return vox_subd;
-//		if (vdGetIsFilled(fetchedVoxel)) {
-//			return vox_subd;
-//		} else {
-//			return vox_empty;
-//		}
+		if (true) {
+			return vox_subd;
+		} else {
+			return vox_empty;
+		}
 	}
 }
 
@@ -229,6 +231,4 @@ void main() {
 	if (controlsIn.z == 1.0) { fsOut = fsOut * floor(hitclass.x); } // grid view
 	else if (controlsIn.z == 2.0 && vdGetIsFilled(voxel)) { fsOut.xyz = abs(hit.yzw); } // normals view
 	fsOut = sqrt(fsOut);
-	
-	fsOut.rgb = pow(fsOut.rgb, vec3(1./2.2));		
 }

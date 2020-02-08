@@ -37,12 +37,10 @@ namespace tvx {
 					  rot.w = -1;
 				  }),
 				  upDetSub("mouse_down_x1", [&](void *data) -> void {
-					  ctrl.x = -1;
 					  if (--curLvl < 1) { curLvl += this->maxLvl; }
 					  ctrl.w = curLvl;
 				  }),
 				  dnDetSub("mouse_down_x2", [&](void *data) -> void {
-					  ctrl.y = -1;
 					  if (++curLvl > this->maxLvl) { curLvl -= this->maxLvl; }
 					  ctrl.w = curLvl;
 				  }),
@@ -81,6 +79,7 @@ namespace tvx {
 		return rot;
 	}
 	glm::vec4 FreeCamera::getPos() {
+		pos.w = maxLvl;
 		return pos;
 	}
 	glm::vec4 FreeCamera::getCtrl() {
@@ -90,8 +89,6 @@ namespace tvx {
 		dt = delta;
 		rot.z = 1;
 		rot.w = 1;
-		ctrl.x = 1;
-		ctrl.y = 1;
 	}
 	void FreeCamera::setAspect(float wOverH) {
 		aspect = wOverH;

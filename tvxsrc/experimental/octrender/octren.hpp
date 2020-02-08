@@ -40,6 +40,7 @@ namespace tvx {
 			[[nodiscard]] uint_fast8_t getLightness() const;
 			void setBits(uint32_t in);
 			void setChildOn(OctCoordCartesian which);
+			void setChildren(uint8_t in);
 			void setIsFilled(bool in);
 			void setIsMetal(bool in);
 			void setRed(uint_fast8_t in);
@@ -81,11 +82,6 @@ namespace tvx {
 				leaves.sendToGpu();
 				buftex->sendToGpu();
 				buftex->use(0);
-				
-				
-				// for (int i = 0; i < trunkCount + 10; ++i) {
-				// 	publishf("log", "%4i:\t%#08x", i, *buftex->cpu<VoxelDword>(i));
-				// }
 			}
 
 		private:
@@ -94,11 +90,12 @@ namespace tvx {
 			GeneralBuffer<maxLeafBytes, bufType> leaves;
 			std::unique_ptr<BufferTexture<32768 * sizeof(VoxelDword)>> buftex;
 			Octree<VoxelDword> octree;
-			uint_fast64_t curVoxLve = maxLvl;
 			
 			void fillLeavesMortonColorsRandomized() {
 				for (uint_fast64_t i = 0; i < leafCount; ++i) {
 					VoxelDword voxel;
+					uint_fast16_t x, y, z;
+					libmorton::morton3D_32_decode(i, x, y, z);
 					bool isFilled = ! (i % 5);
 					voxel.setIsFilled(isFilled);
 					if (isFilled) {
@@ -109,14 +106,11 @@ namespace tvx {
 						voxel.setRoughness(15);
 						voxel.setLightness(0);
 					}
-					insertLeaf(voxel, i);
-					uint_fast16_t x, y, z;
-					libmorton::morton3D_32_decode(i, x, y, z);
 					octree.insert(x, y, z, voxel);
+					insertLeaf(voxel, i);
 				}
 			}
 
-			float colorMult = 0.5f;
 			void fillLeavesAntisphere() {
 				for (uint_fast64_t i = 0; i < leafCount; ++i) {
 					VoxelDword voxel;
@@ -127,9 +121,9 @@ namespace tvx {
 					                                     glm::length(pos / 32.f - glm::vec3(0.25)) > 0.2f;
 					voxel.setIsFilled(isFilled);
 					if (isFilled) {
-						voxel.setRed(x * colorMult);
-						voxel.setGreen(y * colorMult);
-						voxel.setBlue(z * colorMult);
+						voxel.setRed(x * 0.5f);
+						voxel.setGreen(y * 0.5f);
+						voxel.setBlue(z * 0.5f);
 					}
 					octree.insert(x, y, z, voxel);
 					insertLeaf(voxel, i);
@@ -144,23 +138,24 @@ namespace tvx {
 					bool isFilled = (x == 0 || x == 15) && (y == 0 || y == 15) && (z == 0 || z == 15);
 					voxel.setIsFilled(isFilled);
 					if (isFilled) {
-						voxel.setRed(x / 2.f);
-						voxel.setGreen(y / 2.f);
-						voxel.setBlue(z / 2.f);
+						voxel.setRed(x / 0.5f);
+						voxel.setGreen(y / 0.5f);
+						voxel.setBlue(z / 0.5f);
 					}
-					insertLeaf(voxel, i);
 					octree.insert(x, y, z, voxel);
+					insertLeaf(voxel, i);
 				}
 			}
 			
 			struct Accumulator {
-				uint_fast8_t red = 0, green = 0, blue = 0, metal = 0, rough = 0, light = 0, which = 0;
+				uint_fast8_t red = 0, green = 0, blue = 0, metal = 0, rough = 0, light = 0, which = 0, count = 0;
 				VoxelDword voxel = {};
 				void add(const VoxelDword &v) {
 					if ( ! v.getIsFilled()) {
 						++which;
 						return;
 					}
+					++count;
 					voxel.setChildOn(static_cast<OctCoordCartesian>(which++));
 					red += v.getRed();
 					green += v.getGreen();
@@ -171,14 +166,15 @@ namespace tvx {
 				}
 				void add(VoxelDword &&v) { add(v); }
 				VoxelDword avg() {
-					voxel.setRed(red / 8);
-					voxel.setGreen(green / 8);
-					voxel.setBlue(blue / 8);
+					if ( ! count) { return voxel; }
+					voxel.setRed(red / count);
+					voxel.setGreen(green / count);
+					voxel.setBlue(blue / count);
 					voxel.setNormal(26);
-					voxel.setIsFilled(voxel.getChildMasked(0xFF)/* == 0xFF*/);
-					voxel.setIsMetal(metal / 8);
-					voxel.setRoughness(rough / 8);
-					voxel.setLightness(light / 8);
+					voxel.setIsFilled(voxel.getChildMasked(0xFF));
+					voxel.setIsMetal(metal / count);
+					voxel.setRoughness(rough / count);
+					voxel.setLightness(light / count);
 					return voxel;
 				}
 			};
@@ -187,11 +183,10 @@ namespace tvx {
 				recurseLod(octree.root(), head, level);
 			}
 			VoxelDword recurseLod(Octree<VoxelDword>::Node *node, uint_fast64_t &head, uint_fast64_t level) {
-				std::unique_ptr<Accumulator> accum;
 				if (level < maxLvl) {
 					++level;
 					auto branch = reinterpret_cast<Octree<VoxelDword>::Branch *>(node);
-					accum = std::make_unique<Accumulator>();
+					std::unique_ptr<Accumulator> accum = std::make_unique<Accumulator>();
 					accum->add(recurseLod((*branch)[0], head, level));
 					accum->add(recurseLod((*branch)[1], head, level));
 					accum->add(recurseLod((*branch)[2], head, level));
@@ -204,7 +199,7 @@ namespace tvx {
 					accum->add(recurseLod((*branch)[7], head, level));
 					VoxelDword v = accum->avg();
 					*buftex->cpu<VoxelDword>(myHead) = v;
-					// if (v.getChildMasked(0xFF)) {publishf("log", "Level %4llu writing to %4llu:    %#08x", level - 1, myHead, v);}
+					// if (v.getChildMasked(0xFF)) { publishf("log", "Level %4llu writing to %4llu: %#08x", level - 1, myHead, v); }
 					return v;
 				} else {
 					auto leaf = reinterpret_cast<Octree<VoxelDword>::Leaf*>(node);
