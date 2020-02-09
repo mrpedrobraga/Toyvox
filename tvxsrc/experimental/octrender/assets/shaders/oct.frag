@@ -109,15 +109,14 @@ void octDwordGet(out uint voxel, uint lvl, vec3 pos) {
 		lvlOffset += lvlStart(invLvl) + lvlStart(max_lvl);
 		uvec3 upos = uvec3(pos * cur_lvl * cur_lvl);
 		morton16(linearIdx, upos.x * distMult, upos.y * distMult, upos.z * distMult);
-	}
-	else {
-		lvlOffset += lvlStart(invLvl);
-		distMult /= uint(pow(8, invLvl));
+	} else {
 		uvec3 upos = uvec3(pos * cur_lvl * cur_lvl);
-		morton16(linearIdx, upos.x * distMult, upos.y * distMult, upos.z * distMult);
+		morton16(linearIdx, upos.x, upos.y, upos.z);
+		linearIdx += lvlStart(invLvl);
+//		uint l0[1] = {292};
+//		uint l1[8] = {36, 109, 182, 255, 329, 402, 475, 548};
 	}
-	linearIdx += lvlOffset;
-	voxel = texelFetch(buftex, int(linearIdx)).r;
+	voxel = texelFetch(buftex, int(linearIdx + lvlOffset)).r;
 }
 
 float vdGetRed(uint voxel) { return float((voxel & 0xE000u) >> 13u) / 7.0; }

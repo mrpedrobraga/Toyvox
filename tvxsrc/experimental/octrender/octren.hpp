@@ -60,12 +60,11 @@ namespace tvx {
 			static constexpr uint_fast64_t leafCount = sprout::pow(8, maxLvl); // FIXME: clang's sprout::pow is off-by-one?
 			static constexpr uint_fast64_t trunkCount = (leafCount - 1) / 7;
 
-			explicit Voxtree(GLuint voxBind, GLuint nodeBind) : leaves(voxBind), octree(pow(2, maxLvl)) {
+			explicit Voxtree(GLuint voxBind, GLuint nodeBind) : octree(pow(2, maxLvl)) {
 				buftex = std::make_unique<BufferTexture<32768 * sizeof(VoxelDword)>>();
 			}
 
 			void insertLeaf(const VoxelDword &voxel, uint_fast64_t morton) {
-				leaves.template writeToCpu<VoxelDword>(morton + trunkCount, voxel);
 				buftex->writeToCpu<VoxelDword>(morton + trunkCount, voxel);
 			}
 			void insertLeaf(const VoxelDword &voxel, glm::uvec3 pos) {
@@ -75,7 +74,6 @@ namespace tvx {
 			void updateGpu() {
 				fillLeavesAntisphere();
 				recurseLod();
-				leaves.sendToGpu();
 				buftex->sendToGpu();
 				buftex->use(0);
 			}
@@ -83,7 +81,6 @@ namespace tvx {
 		private:
 			static_assert(leafCount * sizeof(VoxelDword) < maxLeafBytes, "Max tree depth too large.");
 			
-			GeneralBuffer<maxLeafBytes, bufType> leaves;
 			std::unique_ptr<BufferTexture<32768 * sizeof(VoxelDword)>> buftex;
 			Octree<VoxelDword> octree;
 			
@@ -174,7 +171,11 @@ namespace tvx {
 					return voxel;
 				}
 			};
+			static void traverseFunc(unsigned x, unsigned y, unsigned z, VoxelDword& value) {
+				publishf("log", "%u", libmorton::morton3D_32_encode(x, y, z));
+			}
 			void recurseLod() {
+				// octree.traverse(&Voxtree::traverseFunc);
 				uint_fast64_t head = 0, level = 0;
 				recurseLod(octree.root(), head, level);
 			}

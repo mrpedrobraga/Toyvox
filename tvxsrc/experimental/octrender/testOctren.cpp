@@ -25,6 +25,7 @@ int main(int argc, char **argv) {
 	IntermediateTexture<GL_RGBA, GL_UNSIGNED_BYTE, GL_NEAREST> irmtex(resX, resY); // GL_RGB565 ?
 	GeneralBuffer<unifBufSize, GL_UNIFORM_BUFFER> globals(1);
 	Voxtree<maxVoxLvl> voxtree(0, 2);
+	
 	voxtree.updateGpu();
 	
 	FreeCamera cam(maxVoxLvl, startPos);
