@@ -25,9 +25,6 @@ namespace tvx {
 			uint8_t data[4] = {};
 		public:
 			
-			static uint64_t mortonize(glm::uvec3 pos);
-			static glm::uvec3 demortonize(uint64_t m);
-			
 			[[nodiscard]] uint32_t getBits();
 			[[nodiscard]] uint_fast8_t getChildMasked(uint_fast8_t mask) const;
 			[[nodiscard]] bool getIsFilled() const;
@@ -64,7 +61,6 @@ namespace tvx {
 			static constexpr uint_fast64_t trunkCount = (leafCount - 1) / 7;
 
 			explicit Voxtree(GLuint voxBind, GLuint nodeBind) : leaves(voxBind), octree(pow(2, maxLvl)) {
-				GeneralBuffer<maxLeafBytes, bufType>::reportUboSupport();
 				buftex = std::make_unique<BufferTexture<32768 * sizeof(VoxelDword)>>();
 			}
 
@@ -77,7 +73,7 @@ namespace tvx {
 				insertLeaf(voxel, morton);
 			}
 			void updateGpu() {
-				fillLeavesMortonColorsRandomized();
+				fillLeavesAntisphere();
 				recurseLod();
 				leaves.sendToGpu();
 				buftex->sendToGpu();

@@ -103,18 +103,21 @@ void morton8(out uint morton, uint x, uint y, uint z) { morton = mortonZ[z] | mo
 
 uint lvlStart(float lvl) { return uint((pow(8., lvl) - 1.) / 7.); }
 
-void octDwordGet(out uint voxel, uint lvl, uint x, uint y, uint z) {
-	uint invLvl = cur_lvl - lvl;
-	uint lvlOffset = 0, distMult = 1;
-	if (max_lvl == cur_lvl) { lvlOffset += lvlStart(invLvl) + lvlStart(max_lvl); }
+void octDwordGet(out uint voxel, uint lvl, vec3 pos) {
+	uint invLvl = cur_lvl - lvl, lvlOffset = 0, distMult = 1, linearIdx = 0;
+	if (max_lvl == cur_lvl) {
+		lvlOffset += lvlStart(invLvl) + lvlStart(max_lvl);
+		uvec3 upos = uvec3(pos * cur_lvl * cur_lvl);
+		morton16(linearIdx, upos.x * distMult, upos.y * distMult, upos.z * distMult);
+	}
 	else {
 		lvlOffset += lvlStart(invLvl);
 		distMult /= uint(pow(8, invLvl));
+		uvec3 upos = uvec3(pos * cur_lvl * cur_lvl);
+		morton16(linearIdx, upos.x * distMult, upos.y * distMult, upos.z * distMult);
 	}
-	uint mortonIdx;
-	morton16(mortonIdx, x * distMult, y * distMult, z * distMult);
-	mortonIdx += lvlOffset;
-	voxel = texelFetch(buftex, int(mortonIdx)).r;
+	linearIdx += lvlOffset;
+	voxel = texelFetch(buftex, int(linearIdx)).r;
 }
 
 float vdGetRed(uint voxel) { return float((voxel & 0xE000u) >> 13u) / 7.0; }
@@ -124,12 +127,10 @@ bool vdGetIsFilled(uint voxel) { return bool(voxel & 0x400000u); }
 bool vdGetHasChildren(uint voxel) { return bool(voxel & 0xFFu); }
 bool vdGetChildrenFull(uint voxel) { return (voxel & 0xFFu) == 0xFFu; }
 
-uint fetchVoxel(vec3 p, float size, inout uint voxel) {
+uint fetchVoxel(vec3 pos, float size, inout uint voxel) {
 	uint lv = uint(log2(1.0 / size));
 	if (lv >= cur_lvl) {
-//		uvec3 pos = uvec3(p * max_lvl * max_lvl);
-		uvec3 pos = uvec3(p * cur_lvl * cur_lvl);
-		octDwordGet(voxel, cur_lvl, pos.x, pos.y, pos.z);
+		octDwordGet(voxel, cur_lvl, pos);
 		if (vdGetIsFilled(voxel)) { return vox_brick; }
 		else { return vox_empty; }
 	}	else {

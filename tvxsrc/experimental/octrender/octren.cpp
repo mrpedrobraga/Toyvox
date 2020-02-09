@@ -3,15 +3,6 @@
 
 namespace tvx {
 
-	uint64_t VoxelDword::mortonize(glm::uvec3 pos) {
-		return libmorton::morton3D_32_encode(pos.x, pos.y, pos.z);
-	}
-	glm::uvec3 VoxelDword::demortonize(uint64_t m) {
-		uint_fast32_t x, y, z;
-		libmorton::morton3D_32_decode(m, x, y, z);
-		return glm::uvec3(x, y, z);
-	}
-	
 	uint32_t VoxelDword::getBits() {
 		return *reinterpret_cast<uint32_t*>(this);
 	}
