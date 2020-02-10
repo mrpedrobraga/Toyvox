@@ -15,7 +15,7 @@ namespace tvx::game {
 	bool should_stop = false;
 	SDL_Window* window;
 	SDL_GLContext glcontext;
-	GLuint window_flags = SDL_WINDOW_OPENGL;
+	GLuint window_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 	glm::ivec2 resolution = glm::ivec2(640, 360);
 	Display current_display(game_title, resolution, window_flags);
 
@@ -41,7 +41,7 @@ namespace tvx::game {
 		{
 				glClearColor( 0.2f, 0.4f, 0.8f, 1.0f );
 				glClear( GL_COLOR_BUFFER_BIT );
-				(current_display).update();
+				(current_display).update(current_scene);
 		}
 	}
 

@@ -61,21 +61,22 @@ namespace tvx {
 	}
 
 	GLuint program_from_file(const char *vsFilename, const char *fsFilename) {
-		std::string vertexCode;
-		std::string fragmentCode;
+		std::string vertexCode = load_file_as_string(vsFilename);
+		std::string fragmentCode = load_file_as_string(fsFilename);
 
-    fragmentCode = "#version 400 core\n"
+    /*fragmentCode = "#version 400 core\n"
     "layout(origin_upper_left) in vec4 gl_FragCoord;\n"
     "uniform float time;\n"
+    "uniform vec2 resolution;\n"
     "void main() {\n"
-    "    gl_FragColor = vec4(gl_FragCoord.x / 640.0, gl_FragCoord.y / 360.0, sin(time), 1.0);"
+    "    gl_FragColor = vec4(gl_FragCoord.xy / resolution, 1.0, 1.0);\n"
     "}\n";
 
     vertexCode = "#version 400 core\n"
     "layout(location = 0) in vec4 in_position;\n"
     "void main() {\n"
-    "    gl_Position = in_position;"
-    "}\n";
+    "    gl_Position = in_position;\n"
+    "}\n";*/
 
 		return program_from_string(vertexCode.c_str(), fragmentCode.c_str());
 	}

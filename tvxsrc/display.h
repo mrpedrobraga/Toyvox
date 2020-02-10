@@ -1,6 +1,7 @@
 #include <iostream>
 #include "tvxutil.h"
 #include "tvx_glutil.h"
+#include "objects.h"
 
 namespace tvx {
 	class Display
@@ -81,25 +82,44 @@ namespace tvx {
 				glBindVertexArray(0);
 			}
 
-	    void update()
+	    void update(std::shared_ptr<Scene>& scene)
 	    {
-					glUseProgram(program);
+	        SDL_Event e;
+	        while( SDL_PollEvent( &e ) )
+	        {
 
-					glUniform1f(glGetUniformLocation(program, "time"), wall_clock_time());
+							glUseProgram(program);
+
+							glUniform1f(glGetUniformLocation(program, "time"), wall_clock_time());
+
+	            switch (e.type)
+	            {
+								case SDL_QUIT:
+	                m_is_closed = true;
+									break;
+								case SDL_WINDOWEVENT:
+									switch (e.window.event) {
+										case SDL_WINDOWEVENT_RESIZED:
+											SDL_GetWindowSize(m_window, &m_windowsize.x, &m_windowsize.y);
+											f_windowsize = glm::vec2((float) m_windowsize.x, (float) m_windowsize.y);
+											glViewport(0, 0, m_windowsize.x, m_windowsize.y);
+											glUniform2fv(glGetUniformLocation(program, "resolution"), sizeof(m_windowsize), (float*)(&f_windowsize));
+
+											break;
+										case SDL_WINDOWEVENT_FOCUS_GAINED:
+											reload_program(&program, vertex_shader_path, pixel_shader_path);
+											break;
+									}
+	            }
+
+							//if(scene->on_event) scene->on_event(e, *scene);
+	        }
 
 					glBindVertexArray(m_vertexArrayObject);
 					glDrawArrays(GL_TRIANGLE_STRIP, 0, 8);
 					glBindVertexArray(0);
 
 					SDL_GL_SwapWindow( m_window );
-	        SDL_Event e;
-	        while( SDL_PollEvent( &e ) )
-	        {
-	            if( e.type == SDL_QUIT )
-	            {
-	                m_is_closed = true;
-	            }
-	        }
 	    }
 
 	    ~Display()
@@ -136,6 +156,8 @@ namespace tvx {
 
 	private:
 	    SDL_Window* m_window;
+			glm::ivec2 m_windowsize;
+			glm::vec2 f_windowsize;
 	    SDL_GLContext m_gl_context;
 			GLuint program;
 			GLuint VAO, VBO;
