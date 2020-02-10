@@ -136,7 +136,7 @@ bool vdGetChildrenFull(uint voxel) { return (voxel & 0xFFu) == 0xFFu; }
 uint getVoxelEffect(vec3 pos, float size, inout uint voxel) {
 	if (any(greaterThan(abs(pos * 1.0001 - 0.5), vec3(0.5)))) { return vox_nil; }
 	uint lv = uint(log2(1.0 / size));
-	if (bool(uint(controlsIn.z / 10))) { // level view mode
+	if (cur_lvl != max_lvl) { // level view mode
 		if (lv >= cur_lvl) {
 			octDwordGet(voxel, cur_lvl, pos);
 			if (vdGetIsFilled(voxel)) { return vox_brick; }
@@ -227,7 +227,7 @@ vec4 rayMarch(vec3 raySrc, vec3 rayDir, float maxdist, out vec4 hitclass, inout 
 			
 		} else { break; }
 		
-		if (mod(controlsIn.z, 10) == 1) { // draw grid
+		if (controlsIn.z == 1) { // draw grid
 			vec3 q = abs(raySrcInSub / childSize - 0.5) * (1.0 - prevDirs);
 			hitclass.x = min(hitclass.x, -(max(max(q.x, q.y), q.z)-0.5) * 1000.0 * childSize);
 		}
@@ -247,7 +247,7 @@ void main() {
 	else { fsOut.xyz = vec3(0.2, 0.2, 0.2); }
 	
 	fsOut *= fsOut;
-	if (mod(controlsIn.z, 10) == 1.0) { fsOut = fsOut * floor(hitclass.x); } // grid view
-	else if (mod(controlsIn.z, 10) == 2.0 && vdGetIsFilled(voxel)) { fsOut.xyz = abs(hit.yzw); } // normals view
+	if (controlsIn.z == 1.0) { fsOut = fsOut * floor(hitclass.x); } // grid view
+	else if (controlsIn.z == 2.0 && vdGetIsFilled(voxel)) { fsOut.xyz = abs(hit.yzw); } // normals view
 	fsOut = sqrt(fsOut);
 }
