@@ -80,13 +80,16 @@ layout (location = 5) in vec4 controlsIn;
 layout (std140, binding = 0) uniform packedVoxels { vec4 buf[4096]; };
 layout (location = 0) out vec4 fsOut;
 
-#define max_lvl uint(camPosIn.w)
-#define cur_lvl uint(controlsIn.w)
 #define steps 100
 #define vox_nil 0
 #define vox_subd 1
 #define vox_empty 2
 #define vox_brick 3
+#define max_lvl uint(camPosIn.w)
+#define cur_lvl uint(controlsIn.w)
+#define leaf_count uint(pow(8, max_lvl))
+#define scnd_count uint(pow(8, max_lvl - 1))
+#define nuclear_count uint((pow(8, max_lvl - 1) - 1) / 7)
 
 void morton32(out uint morton, uint x, uint y, uint z){
 	morton = 0;
@@ -101,20 +104,24 @@ void morton16(out uint morton, uint x, uint y, uint z){
 }
 void morton8(out uint morton, uint x, uint y, uint z) { morton = mortonZ[z] | mortonY[y] | mortonX[x]; }
 
-uint lvlStart(float lvl) { return uint((pow(8., lvl) - 1.) / 7.); }
+uint sumOfPowers(uint power) { return uint((pow(8, power) - 1) / 7); }
 
 void octDwordGet(out uint voxel, uint lvl, vec3 pos) {
-	uint invLvl = cur_lvl - lvl, lvlOffset = 0, distMult = 1, linearIdx = 0;
-	if (max_lvl == cur_lvl) {
-		lvlOffset += lvlStart(invLvl) + lvlStart(max_lvl);
-		uvec3 upos = uvec3(pos * cur_lvl * cur_lvl);
-		morton16(linearIdx, upos.x * distMult, upos.y * distMult, upos.z * distMult);
-	} else {
-		uvec3 upos = uvec3(pos * cur_lvl * cur_lvl);
-		morton16(linearIdx, upos.x, upos.y, upos.z);
-		linearIdx += lvlStart(invLvl);
-//		uint l0[1] = {292};
-//		uint l1[8] = {36, 109, 182, 255, 329, 402, 475, 548};
+	uint invLvl = max_lvl - lvl, lvlOffset = 0, linearIdx = 0;
+	float voxInvScale = pow(2, lvl);
+	uvec3 upos = uvec3(pos * voxInvScale /*+ vec3(0.5 / voxInvScale)*/);
+	morton32(linearIdx, upos.x, upos.y, upos.z);
+	switch(invLvl) {
+		case 0: {
+			lvlOffset += (linearIdx < leaf_count / 2 ? 0 : nuclear_count) + (linearIdx) / 8;
+		} break;
+		case 1: {
+			lvlOffset += 8 + ((linearIdx < scnd_count / 2) ? 0 : nuclear_count);
+			linearIdx *= 9;
+		} break;
+		default: {
+			lvlOffset += (leaf_count + scnd_count) / 2;
+		}
 	}
 	voxel = texelFetch(buftex, int(linearIdx + lvlOffset)).r;
 }
@@ -126,24 +133,36 @@ bool vdGetIsFilled(uint voxel) { return bool(voxel & 0x400000u); }
 bool vdGetHasChildren(uint voxel) { return bool(voxel & 0xFFu); }
 bool vdGetChildrenFull(uint voxel) { return (voxel & 0xFFu) == 0xFFu; }
 
-uint fetchVoxel(vec3 pos, float size, inout uint voxel) {
+uint getVoxelEffect(vec3 pos, float size, inout uint voxel) {
+	if (any(greaterThan(abs(pos * 1.0001 - 0.5), vec3(0.5)))) { return vox_nil; }
 	uint lv = uint(log2(1.0 / size));
-	if (lv >= cur_lvl) {
-		octDwordGet(voxel, cur_lvl, pos);
-		if (vdGetIsFilled(voxel)) { return vox_brick; }
-		else { return vox_empty; }
-	}	else {
-		if (true) {
-			return vox_subd;
-		} else {
-			return vox_empty;
+	if (bool(uint(controlsIn.z / 10))) { // level view mode
+		if (lv >= cur_lvl) {
+			octDwordGet(voxel, cur_lvl, pos);
+			if (vdGetIsFilled(voxel)) { return vox_brick; }
+			else { return vox_empty; }
+		}	else {
+			if (true) {
+				return vox_subd;
+			} else {
+				return vox_empty;
+			}
 		}
+	} else { // regular mode
+		octDwordGet(voxel, lv, pos);
+		if (vdGetIsFilled(voxel)) {
+			if (vdGetHasChildren(voxel)) {
+				return vox_subd;
+			}
+			return vox_brick;
+		}
+		return vox_empty;
 	}
 }
 
-vec3 voxelHit(vec3 ro, vec3 rd, float size) {
+vec3 voxelHit(vec3 raySrc, vec3 rayDir, float size) {
 	size *= 0.5;
-	vec3 hit = -(sign(rd)*(ro-size)-size)/max(abs(rd), 0.001);
+	vec3 hit = -(sign(rayDir) * (raySrc - size) - size) / max(abs(rayDir), 0.001);
 	return hit;
 }
 
@@ -153,19 +172,19 @@ vec4 rayMarch(vec3 raySrc, vec3 rayDir, float maxdist, out vec4 hitclass, inout 
 	float childSize = 0.5, dist = 0.0;
 	vec3 raySrcInSub = mod(raySrc, childSize), raySrcInCur = raySrc - raySrcInSub, dirs = vec3(0), prevDirs = vec3(0);
 	bool levelUp = false;
-	int recur = 0, recurr = 0, recurrr = 0, curVoxFound = 0;
+	int recur = 0, recurr = 0, recurrr = 0, curVoxEffect = 0;
 	
-	if (any(greaterThan(abs(raySrc-0.5), vec3(0.5)))) return vec4(0);
+	if (any(greaterThan(abs(raySrc - 0.5), vec3(0.5)))) return vec4(0);
 	vec3 hit = voxelHit(raySrcInSub, rayDir, childSize);
 	
 	for (int curStep = 0; curStep < steps; ++curStep) {
 		
 		if (dist >= maxdist) { break; }
 		if (recurr == recur) { vec3 q = mod(floor(raySrcInCur / childSize + 0.5) + 0.5, 2.0) - 0.5; }
-		int voxFound = 0;
-		if (recurrr == recur) { curVoxFound = int(fetchVoxel(raySrcInCur, childSize, voxel)); }
-		bool isNil = recurr < recur || voxFound == vox_nil;
-		if (isNil) { voxFound = curVoxFound; }
+		int nextVoxEffect = 0;
+		if (recurrr == recur) { curVoxEffect = int(getVoxelEffect(raySrcInCur, childSize, voxel)); }
+		bool isNil = recurr < recur || nextVoxEffect == vox_nil;
+		if (isNil) { nextVoxEffect = curVoxEffect; }
 		
 		if (levelUp) { // go up a level
 			
@@ -180,18 +199,18 @@ vec4 rayMarch(vec3 raySrc, vec3 rayDir, float maxdist, out vec4 hitclass, inout 
 			if (recur < 0) break;
 			levelUp = (abs(dot(mod(raySrcInCur / childSize + 0.5, 2.0) - 1.0 + dirs * sign(rayDir) * 0.5, dirs)) < 0.1);
 			
-		} else if (voxFound == vox_subd) { // subdivide
+		} else if (nextVoxEffect == vox_subd) { // subdivide
 			
 			recur++;
 			if (!isNil) { recurr++; }
-			if (curVoxFound == vox_subd) { recurrr++; }
+			if (curVoxEffect == vox_subd) { recurrr++; }
 			childSize *= 0.5;
 			vec3 mask2 = step(vec3(childSize), raySrcInSub); // which of 8
 			raySrcInCur += mask2 * childSize;
 			raySrcInSub -= mask2 * childSize;
 			hit = voxelHit(raySrcInSub, rayDir, childSize);
 			
-		} else if (voxFound == vox_nil || voxFound == vox_empty) { // forward
+		} else if (nextVoxEffect == vox_nil || nextVoxEffect == vox_empty) { // forward
 			
 			if (hit.x < min(hit.y, hit.z)) { dirs = vec3(1, 0, 0); }
 			else if (hit.y < hit.z) { dirs = vec3(0, 1, 0); }
@@ -199,7 +218,7 @@ vec4 rayMarch(vec3 raySrc, vec3 rayDir, float maxdist, out vec4 hitclass, inout 
 			float len = dot(hit, dirs);
 			hit -= len;
 			hit += dirs * (1.0 / abs(rayDir)) * childSize;
-			raySrcInSub += rayDir * len-dirs*sign(rayDir) * childSize;
+			raySrcInSub += rayDir * len - dirs * sign(rayDir) * childSize;
 			vec3 newfro = raySrcInCur + dirs * sign(rayDir) * childSize;
 			dist += len;
 			levelUp = (floor(newfro / childSize * 0.5 + 0.25) != floor(raySrcInCur / childSize * 0.5 + 0.25));
@@ -208,7 +227,7 @@ vec4 rayMarch(vec3 raySrc, vec3 rayDir, float maxdist, out vec4 hitclass, inout 
 			
 		} else { break; }
 		
-		if (controlsIn.z == 1) { // draw grid
+		if (mod(controlsIn.z, 10) == 1) { // draw grid
 			vec3 q = abs(raySrcInSub / childSize - 0.5) * (1.0 - prevDirs);
 			hitclass.x = min(hitclass.x, -(max(max(q.x, q.y), q.z)-0.5) * 1000.0 * childSize);
 		}
@@ -223,12 +242,12 @@ void main() {
 	
 	vec4 hitclass = vec4(0.0);
 	uint voxel = 0;
-	vec4 hit = rayMarch(camPosIn.xyz, rayDir, 4.0, hitclass, voxel);
+	vec4 hit = rayMarch(camPosIn.xyz, rayDir, 2.0, hitclass, voxel);
 	if (vdGetIsFilled(voxel)) { fsOut.xyz = vec3(vdGetRed(voxel), vdGetGreen(voxel), vdGetBlue(voxel)); }
 	else { fsOut.xyz = vec3(0.2, 0.2, 0.2); }
 	
 	fsOut *= fsOut;
-	if (controlsIn.z == 1.0) { fsOut = fsOut * floor(hitclass.x); } // grid view
-	else if (controlsIn.z == 2.0 && vdGetIsFilled(voxel)) { fsOut.xyz = abs(hit.yzw); } // normals view
+	if (mod(controlsIn.z, 10) == 1.0) { fsOut = fsOut * floor(hitclass.x); } // grid view
+	else if (mod(controlsIn.z, 10) == 2.0 && vdGetIsFilled(voxel)) { fsOut.xyz = abs(hit.yzw); } // normals view
 	fsOut = sqrt(fsOut);
 }

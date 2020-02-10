@@ -1,11 +1,8 @@
 
 #pragma once
 
-#include <deque>
-#include "sprout/math/pow.hpp"
 #include "extern.hpp"
 #include "morton.h"
-#include "Octree.hpp"
 #include "buffers.hpp"
 #include "topics.hpp"
 
@@ -53,14 +50,16 @@ namespace tvx {
 			 */
 	};
 
-	template<uint_fast64_t maxLvl, uint_fast64_t maxLeafBytes = 65536> // 65536 is spec-required UBO minimum
+	template<uint_fast64_t maxLvl> // 65536 is spec-required UBO minimum
 	class Voxtree {
 		public:
-			static constexpr uint_fast64_t bufType = GL_UNIFORM_BUFFER;
 			static constexpr uint_fast64_t leafCount = sprout::pow(8, maxLvl); // FIXME: clang's sprout::pow is off-by-one?
+			static constexpr uint_fast64_t scndCount = sprout::pow(8, maxLvl - 1);
+			static constexpr uint_fast64_t valenceCount = leafCount + scndCount;
 			static constexpr uint_fast64_t trunkCount = (leafCount - 1) / 7;
+			static constexpr uint_fast64_t nuclearCount = (sprout::pow(8, maxLvl - 1) - 1) / 7;
 
-			explicit Voxtree(GLuint voxBind, GLuint nodeBind) : octree(pow(2, maxLvl)) {
+			explicit Voxtree(GLuint voxBind, GLuint nodeBind) {
 				buftex = std::make_unique<BufferTexture<32768 * sizeof(VoxelDword)>>();
 			}
 
@@ -72,78 +71,19 @@ namespace tvx {
 				insertLeaf(voxel, morton);
 			}
 			void updateGpu() {
-				fillLeavesAntisphere();
-				recurseLod();
+				fill();
+				// recurseLod();
 				buftex->sendToGpu();
 				buftex->use(0);
 			}
 
 		private:
-			static_assert(leafCount * sizeof(VoxelDword) < maxLeafBytes, "Max tree depth too large.");
-			
-			std::unique_ptr<BufferTexture<32768 * sizeof(VoxelDword)>> buftex;
-			Octree<VoxelDword> octree;
-			
-			void fillLeavesMortonColorsRandomized() {
-				for (uint_fast64_t i = 0; i < leafCount; ++i) {
-					VoxelDword voxel;
-					uint_fast16_t x, y, z;
-					libmorton::morton3D_32_decode(i, x, y, z);
-					bool isFilled = ! (i % 5);
-					voxel.setIsFilled(isFilled);
-					if (isFilled) {
-						float cycler = 0.0043f * i;
-						voxel.setRed((7.f / 2.f) * (1 + sinf(cycler)));
-						voxel.setGreen((7.f / 2.f) * (1 + sinf(cycler + M_PIf32 * (2.f / 3.f))));
-						voxel.setBlue((7.f / 2.f) * (1 + sinf(cycler + M_PIf32 * (4.f / 3.f))));
-						voxel.setRoughness(15);
-						voxel.setLightness(0);
-					}
-					octree.insert(x, y, z, voxel);
-					insertLeaf(voxel, i);
-				}
-			}
 
-			void fillLeavesAntisphere() {
-				for (uint_fast64_t i = 0; i < leafCount; ++i) {
-					VoxelDword voxel;
-					uint_fast16_t x, y, z;
-					libmorton::morton3D_32_decode(i, x, y, z);
-					glm::vec3 pos(x, y, z);
-					bool isFilled = (x > 2 && x <= 13) && (y > 2 && y <= 13) && (z > 2 && z <= 13) &&
-					                                     glm::length(pos / 32.f - glm::vec3(0.25)) > 0.2f;
-					voxel.setIsFilled(isFilled);
-					if (isFilled) {
-						voxel.setRed(x * 0.5f);
-						voxel.setGreen(y * 0.5f);
-						voxel.setBlue(z * 0.5f);
-					}
-					octree.insert(x, y, z, voxel);
-					insertLeaf(voxel, i);
-				}
-			}
-
-			void fillTestCorners() {
-				for (uint_fast64_t i = 0; i < leafCount; ++i) {
-					VoxelDword voxel;
-					uint_fast16_t x, y, z;
-					libmorton::morton3D_32_decode(i, x, y, z);
-					bool isFilled = (x == 0 || x == 15) && (y == 0 || y == 15) && (z == 0 || z == 15);
-					voxel.setIsFilled(isFilled);
-					if (isFilled) {
-						voxel.setRed(x / 0.5f);
-						voxel.setGreen(y / 0.5f);
-						voxel.setBlue(z / 0.5f);
-					}
-					octree.insert(x, y, z, voxel);
-					insertLeaf(voxel, i);
-				}
-			}
-			
 			struct Accumulator {
-				uint_fast8_t red = 0, green = 0, blue = 0, metal = 0, rough = 0, light = 0, which = 0, count = 0;
 				VoxelDword voxel = {};
+				uint_fast8_t red = 0, green = 0, blue = 0, metal = 0, rough = 0, light = 0, which = 0, count = 0;
 				void add(const VoxelDword &v) {
+					assert(which < 8);
 					if ( ! v.getIsFilled()) {
 						++which;
 						return;
@@ -158,6 +98,7 @@ namespace tvx {
 					light += v.getLightness();
 				}
 				void add(VoxelDword &&v) { add(v); }
+				bool isDirty() { return which; }
 				VoxelDword avg() {
 					if ( ! count) { return voxel; }
 					voxel.setRed(red / count);
@@ -170,38 +111,102 @@ namespace tvx {
 					voxel.setLightness(light / count);
 					return voxel;
 				}
+				VoxelDword get() {
+					return voxel;
+				}
+				void reset() {
+					red = 0;
+					green = 0;
+					blue = 0;
+					metal = 0;
+					rough = 0;
+					light = 0;
+					which = 0;
+					count = 0;
+				}
 			};
-			static void traverseFunc(unsigned x, unsigned y, unsigned z, VoxelDword& value) {
-				publishf("log", "%u", libmorton::morton3D_32_encode(x, y, z));
+			
+			std::unique_ptr<BufferTexture<32768 * sizeof(VoxelDword)>> buftex;
+			std::array<Accumulator, nuclearCount + scndCount> nuclearAccumulators;
+			
+			VoxelDword getMortonColors(uint_fast64_t morton) {
+				VoxelDword voxel;
+				uint_fast16_t x, y, z;
+				libmorton::morton3D_32_decode(morton, x, y, z);
+				bool isFilled = ! (morton % 5);
+				voxel.setIsFilled(isFilled);
+				if (isFilled) {
+					float cycler = 0.0043f * morton;
+					voxel.setRed((7.f / 2.f) * (1 + sinf(cycler)));
+					voxel.setGreen((7.f / 2.f) * (1 + sinf(cycler + M_PIf32 * (2.f / 3.f))));
+					voxel.setBlue((7.f / 2.f) * (1 + sinf(cycler + M_PIf32 * (4.f / 3.f))));
+					voxel.setRoughness(15);
+					voxel.setLightness(0);
+				}
+				return voxel;
 			}
-			void recurseLod() {
-				// octree.traverse(&Voxtree::traverseFunc);
-				uint_fast64_t head = 0, level = 0;
-				recurseLod(octree.root(), head, level);
+			
+			VoxelDword getAntisphere(uint_fast64_t morton) {
+				VoxelDword voxel;
+				uint_fast16_t x, y, z;
+				libmorton::morton3D_32_decode(morton, x, y, z);
+				bool isFilled = (x > 2 && x <= 13) && (y > 2 && y <= 13) && (z > 2 && z <= 13) &&
+				                glm::length(glm::vec3(x, y, z) / 32.f - glm::vec3(0.25)) > 0.17f;
+				voxel.setIsFilled(isFilled);
+				if (isFilled) {
+					voxel.setRed(x * 0.5f);
+					voxel.setGreen(y * 0.5f);
+					voxel.setBlue(z * 0.5f);
+				}
+				return voxel;
 			}
-			VoxelDword recurseLod(Octree<VoxelDword>::Node *node, uint_fast64_t &head, uint_fast64_t level) {
-				if (level < maxLvl) {
-					++level;
-					auto branch = reinterpret_cast<Octree<VoxelDword>::Branch *>(node);
-					std::unique_ptr<Accumulator> accum = std::make_unique<Accumulator>();
-					accum->add(recurseLod((*branch)[0], head, level));
-					accum->add(recurseLod((*branch)[1], head, level));
-					accum->add(recurseLod((*branch)[2], head, level));
-					accum->add(recurseLod((*branch)[3], head, level));
-					// publishf("log", "Level %4llu writing to %4llu", level - 1, head);
-					uint_fast64_t myHead = head++;
-					accum->add(recurseLod((*branch)[4], head, level));
-					accum->add(recurseLod((*branch)[5], head, level));
-					accum->add(recurseLod((*branch)[6], head, level));
-					accum->add(recurseLod((*branch)[7], head, level));
-					VoxelDword v = accum->avg();
-					*buftex->cpu<VoxelDword>(myHead) = v;
-					// if (v.getChildMasked(0xFF)) { publishf("log", "Level %4llu writing to %4llu: %#08x", level - 1, myHead, v); }
-					return v;
-				} else {
-					auto leaf = reinterpret_cast<Octree<VoxelDword>::Leaf*>(node);
-					return leaf->value();
+
+			VoxelDword getDebugCorners(uint_fast64_t morton) {
+				VoxelDword voxel;
+				uint_fast16_t x, y, z;
+				libmorton::morton3D_32_decode(morton, x, y, z);
+				bool isFilled = (x == 0 || x == 15) && (y == 0 || y == 15) && (z == 0 || z == 15);
+				voxel.setIsFilled(isFilled);
+				if (isFilled) {
+					voxel.setRed(x * 0.5f);
+					voxel.setGreen(y * 0.5f);
+					voxel.setBlue(z * 0.5f);
+				}
+				return voxel;
+			}
+
+			void fill() {
+				uint_fast64_t valenceIdx = 0, leafIdx = 0, nuclearStart = valenceCount / 2, nuclearCrct = 0, accumIdx = 0;
+				for (; valenceIdx < valenceCount + nuclearCount; ++valenceIdx) {
+					if (valenceIdx == nuclearStart) {
+						nuclearCrct -= nuclearCount;
+						valenceIdx += nuclearCount; // JUMP THE NUCLEUS
+					}
+					VoxelDword voxel;
+					if ((valenceIdx + nuclearCrct + 1) % 9) { voxel = getAntisphere(leafIdx++); }
+					else {
+						nuclearAccumulators[accumIdx].reset();
+						for (int i = -8; i < 0; ++i) {
+							nuclearAccumulators[accumIdx].add(*buftex->cpu<VoxelDword>(valenceIdx + i));
+						}
+						voxel = nuclearAccumulators[accumIdx++].avg();
+					}
+					buftex->writeToCpu<VoxelDword>(valenceIdx, voxel);
+				}
+				
+				uint_fast64_t nuclearIdx = 0, nuclearInvLvl = 2, nuclearAvgHead = 0;
+				for (; nuclearInvLvl <= maxLvl; ++nuclearInvLvl) {
+					uint_fast32_t lvlLimit = pow(8, maxLvl - nuclearInvLvl);
+					for (uint_fast32_t inLvl = 0; inLvl < lvlLimit; ++inLvl) {
+						nuclearAccumulators[accumIdx].reset();
+						uint_fast64_t nuclearAvgLimit = nuclearAvgHead + 8;
+						for (; nuclearAvgHead < nuclearAvgLimit; ++nuclearAvgHead) {
+							nuclearAccumulators[accumIdx].add(nuclearAccumulators[nuclearAvgHead].get());
+						}
+						buftex->writeToCpu<VoxelDword>(nuclearStart + nuclearIdx++, nuclearAccumulators[accumIdx++].avg());
+					}
 				}
 			}
+
 	};
 }

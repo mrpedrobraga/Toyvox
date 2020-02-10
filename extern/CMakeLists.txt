@@ -16,13 +16,6 @@ extern( link SDL2-static )
 add_subdirectory( glm )
 extern( link glm )
 
-add_library( octree STATIC
-  simpleoctree/src/Pool.hpp simpleoctree/src/Pool.cpp
-  simpleoctree/src/Octree.hpp simpleoctree/src/Octree.cpp
-  )
-target_include_directories( octree PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/simpleoctree/src )
-extern( link octree )
-
 add_library( glad STATIC glad/src/glad.c )
 target_include_directories( glad PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/glad/include/ )
 extern( link glad )

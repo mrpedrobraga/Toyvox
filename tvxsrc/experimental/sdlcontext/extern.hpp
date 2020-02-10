@@ -12,6 +12,8 @@
 #include <atomic>
 #include <functional>
 #include <unordered_map>
+#include <deque>
+#include <array>
 
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
@@ -29,3 +31,5 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#include "sprout/math/pow.hpp"

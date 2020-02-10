@@ -4,9 +4,6 @@
 [submodule "extern/SDL-mirror"]
 	path = extern/SDL-mirror
 	url = https://github.com/spurious/SDL-mirror
-[submodule "extern/simpleoctree"]
-	path = extern/simpleoctree
-	url = https://github.com/mwarning/simpleoctree
 [submodule "extern/libmorton"]
 	path = extern/libmorton
 	url = https://github.com/forceflow/libmorton
