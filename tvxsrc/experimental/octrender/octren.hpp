@@ -59,7 +59,7 @@ namespace tvx {
 			static constexpr uint_fast64_t trunkCount = (leafCount - 1) / 7;
 			static constexpr uint_fast64_t nuclearCount = (sprout::pow(8, maxLvl - 1) - 1) / 7;
 
-			explicit Voxtree(GLuint voxBind, GLuint nodeBind) {
+			explicit Voxtree() {
 				buftex = std::make_unique<BufferTexture<32768 * sizeof(VoxelDword)>>();
 			}
 
@@ -72,7 +72,6 @@ namespace tvx {
 			}
 			void updateGpu() {
 				fill();
-				// recurseLod();
 				buftex->sendToGpu();
 				buftex->use(0);
 			}

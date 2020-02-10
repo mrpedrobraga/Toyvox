@@ -9,7 +9,7 @@ layout (location = 3) out vec4 camPosOut;
 layout (location = 4) out vec4 camRotOut;
 layout (location = 5) out vec4 controlsOut;
 
-layout (std140, binding = 1) uniform global {
+layout (std140, binding = 0) uniform global {
   vec4 pack;
   vec4 camPos;
   vec4 camRot;

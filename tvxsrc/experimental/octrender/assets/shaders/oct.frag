@@ -77,7 +77,6 @@ layout (location = 2) in float dtIn;
 layout (location = 3) in vec4 camPosIn;
 layout (location = 4) in vec4 camRotIn;
 layout (location = 5) in vec4 controlsIn;
-layout (std140, binding = 0) uniform packedVoxels { vec4 buf[4096]; };
 layout (location = 0) out vec4 fsOut;
 
 #define steps 100
