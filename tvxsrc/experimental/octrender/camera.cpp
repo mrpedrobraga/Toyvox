@@ -6,7 +6,7 @@ namespace tvx {
 		pos.x += amount *  sinf( yaw ) * cosf( pitch );
 		pos.y += amount * -sinf( pitch );
 		pos.z += amount *  cosf( yaw ) * cosf( pitch );
-		static constexpr float padLo = 0.f, padHi = 1.f;
+		static constexpr float padLo = 0.0001f, padHi = 0.9999f;
 		if (pos.x > padHi) { pos.x = padHi; }
 		if (pos.x < padLo) { pos.x = padLo; }
 		if (pos.y > padHi) { pos.y = padHi; }
@@ -37,11 +37,11 @@ namespace tvx {
 					  rot.w = -1;
 				  }),
 				  upDetSub("mouse_down_x1", [&](void *data) -> void {
-					  if (--curLvl < 1) { curLvl += this->maxLvl; }
+					  if (--curLvl < 0) { curLvl += this->maxLvl + 1; }
 					  ctrl.w = curLvl;
 				  }),
 				  dnDetSub("mouse_down_x2", [&](void *data) -> void {
-					  if (++curLvl > this->maxLvl) { curLvl -= this->maxLvl; }
+					  if (++curLvl > this->maxLvl) { curLvl -= (this->maxLvl + 1); }
 					  ctrl.w = curLvl;
 				  }),
 				  gridSub("mouse_wheel", [&](void *data) -> void {

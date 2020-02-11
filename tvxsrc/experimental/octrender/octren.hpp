@@ -152,12 +152,12 @@ namespace tvx {
 				uint_fast16_t x, y, z;
 				libmorton::morton3D_32_decode(morton, x, y, z);
 				bool isFilled = (x > 2 && x <= 13) && (y > 2 && y <= 13) && (z > 2 && z <= 13) &&
-				                glm::length(glm::vec3(x, y, z) / 32.f - glm::vec3(0.25)) > 0.17f;
+				                glm::length(glm::vec3(x, y, z) / 32.f - glm::vec3(0.25)) > 0.2f;
 				voxel.setIsFilled(isFilled);
 				if (isFilled) {
-					voxel.setRed(x * 0.5f);
-					voxel.setGreen(y * 0.5f);
-					voxel.setBlue(z * 0.5f);
+					voxel.setRed((x * -0.5f - 1));
+					voxel.setGreen((y * -0.5f - 1));
+					voxel.setBlue((z * -0.5f - 1));
 				}
 				return voxel;
 			}

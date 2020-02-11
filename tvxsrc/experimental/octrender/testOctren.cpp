@@ -8,7 +8,7 @@
 
 using namespace tvx;
 
-static constexpr uint_fast64_t unifBufSize = 512, maxVoxLvl = 7, resX = 400, resY = 300, dspX = 800, dspY = 600;
+static constexpr uint_fast64_t unifBufSize = 512, maxVoxLvl = 7, resX = 800, resY = 600, dspX = 800, dspY = 600;
 static const char *vertCover = "cover.vert", *fragOct = "oct.frag", *fragCover = "cover.frag";
 static constexpr glm::vec3 startPos = glm::vec3(0.3, 0.6, 0.1);
 

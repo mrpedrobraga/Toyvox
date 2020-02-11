@@ -79,7 +79,7 @@ layout (location = 4) in vec4 camRotIn;
 layout (location = 5) in vec4 controlsIn;
 layout (location = 0) out vec4 fsOut;
 
-#define steps 1000
+#define steps 100
 #define vox_nil 0
 #define vox_subd 1
 #define vox_empty 2
@@ -112,16 +112,12 @@ void octDwordGet(out uint voxel, uint lvl, vec3 pos) {
 	uvec3 upos = uvec3(pos * voxInvScale);
 	morton32(linearIdx, upos.x, upos.y, upos.z);
 	switch(invLvl) {
-		case 0: {
-			lvlOffset += (linearIdx < leaf_count / 2 ? 0 : nuclear_count) + (linearIdx) / 8;
-		} break;
+		case 0: { lvlOffset += (linearIdx < leaf_count / 2 ? 0 : nuclear_count) + (linearIdx) / 8; } break;
 		case 1: {
 			lvlOffset += 8 + ((linearIdx < scnd_count / 2) ? 0 : nuclear_count);
 			linearIdx *= 9;
 		} break;
-		default: {
-			lvlOffset += (leaf_count + scnd_count) / 2;
-		}
+		default: { lvlOffset += (leaf_count + scnd_count) / 2 + max(0, sumOfPowers(max_lvl - 1) - sumOfPowers(lvl + 1)); }
 	}
 	voxel = texelFetch(buftex, int(linearIdx + lvlOffset)).r;
 }
