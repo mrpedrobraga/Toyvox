@@ -79,11 +79,12 @@ layout (location = 4) in vec4 camRotIn;
 layout (location = 5) in vec4 controlsIn;
 layout (location = 0) out vec4 fsOut;
 
-#define steps 100
+#define steps 1000
 #define vox_nil 0
 #define vox_subd 1
 #define vox_empty 2
 #define vox_brick 3
+#define pi 3.1415926535897932384626433832795
 #define max_lvl uint(camPosIn.w)
 #define cur_lvl uint(controlsIn.w)
 #define leaf_count uint(pow(8, max_lvl))
@@ -108,7 +109,7 @@ uint sumOfPowers(uint power) { return uint((pow(8, power) - 1) / 7); }
 void octDwordGet(out uint voxel, uint lvl, vec3 pos) {
 	uint invLvl = max_lvl - lvl, lvlOffset = 0, linearIdx = 0;
 	float voxInvScale = pow(2, lvl);
-	uvec3 upos = uvec3(pos * voxInvScale /*+ vec3(0.5 / voxInvScale)*/);
+	uvec3 upos = uvec3(pos * voxInvScale);
 	morton32(linearIdx, upos.x, upos.y, upos.z);
 	switch(invLvl) {
 		case 0: {
@@ -124,6 +125,10 @@ void octDwordGet(out uint voxel, uint lvl, vec3 pos) {
 	}
 	voxel = texelFetch(buftex, int(linearIdx + lvlOffset)).r;
 }
+
+void vdSetRed(inout uint voxel, float normVal) { voxel = (voxel & 0xFFFF1FFFu) | uint(normVal * 7.0) << 13u; }
+void vdSetGreen(inout uint voxel, float normVal) { voxel = (voxel & 0xFFF8FFFFu) | uint(normVal * 7.0) << 16u; }
+void vdSetBlue(inout uint voxel, float normVal) { voxel = (voxel & 0xFFC7FFFFu) | uint(normVal * 7.0) << 19u; }
 
 float vdGetRed(uint voxel) { return float((voxel & 0xE000u) >> 13u) / 7.0; }
 float vdGetGreen(uint voxel) { return float((voxel & 0x70000u) >> 16u) / 7.0; }
@@ -165,7 +170,7 @@ vec3 voxelHit(vec3 raySrc, vec3 rayDir, float size) {
 	return hit;
 }
 
-vec4 rayMarch(vec3 raySrc, vec3 rayDir, float maxdist, out vec4 hitclass, inout uint voxel) {
+vec4 rayMarch(vec3 raySrc, vec3 rayDir, float maxdist, inout int curStep, inout uint voxel, out vec4 hitclass) {
 	hitclass = vec4(1.0);
 	
 	float childSize = 0.5, dist = 0.0;
@@ -176,7 +181,7 @@ vec4 rayMarch(vec3 raySrc, vec3 rayDir, float maxdist, out vec4 hitclass, inout 
 	if (any(greaterThan(abs(raySrc - 0.5), vec3(0.5)))) return vec4(0);
 	vec3 hit = voxelHit(raySrcInSub, rayDir, childSize);
 	
-	for (int curStep = 0; curStep < steps; ++curStep) {
+	for (; curStep < steps; ++curStep) {
 		
 		if (dist >= maxdist) { break; }
 		if (recurr == recur) { vec3 q = mod(floor(raySrcInCur / childSize + 0.5) + 0.5, 2.0) - 0.5; }
@@ -239,14 +244,19 @@ void main() {
 	rayDir.zy *= mat2(cos(camRotIn.y), -sin(camRotIn.y), sin(camRotIn.y), cos(camRotIn.y));
 	rayDir.zx *= mat2(cos(camRotIn.x), -sin(camRotIn.x), sin(camRotIn.x), cos(camRotIn.x));
 	
+	int stepsTaken = 0;
 	vec4 hitclass = vec4(0.0);
 	uint voxel = 0;
-	vec4 hit = rayMarch(camPosIn.xyz, rayDir, 2.0, hitclass, voxel);
+	vec4 hit = rayMarch(camPosIn.xyz, rayDir, 2.0, stepsTaken, voxel, hitclass);
 	if (vdGetIsFilled(voxel)) { fsOut.xyz = vec3(vdGetRed(voxel), vdGetGreen(voxel), vdGetBlue(voxel)); }
-	else { fsOut.xyz = vec3(0.2, 0.2, 0.2); }
+	else { fsOut.xyz = vec3(0.05); }
 	
 	fsOut *= fsOut;
-	if (controlsIn.z == 1.0) { fsOut = fsOut * floor(hitclass.x); } // grid view
+	if (controlsIn.z == 1.0) { fsOut *= floor(hitclass.x); } // grid view
 	else if (controlsIn.z == 2.0 && vdGetIsFilled(voxel)) { fsOut.xyz = abs(hit.yzw); } // normals view
+	else if (controlsIn.z == 3.0) {
+		float heat = pi * 1.5 * (float(stepsTaken) / float(steps));
+		fsOut = vec4(sin(heat), cos(heat), -cos(heat), fsOut.a);
+	}
 	fsOut = sqrt(fsOut);
 }

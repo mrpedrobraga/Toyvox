@@ -11,6 +11,7 @@ namespace tvx {
 			int_fast32_t curLvl, maxLvl;
 			Subscription mouseMoveSub, mouseLeftSub, mouseRightSub, upDetSub, dnDetSub, gridSub;
 			Subscription fwSub, bwSub, lfSub, rtSub, upSub, dnSub;
+			static constexpr uint_fast32_t numModes = 4;
 		public:
 			explicit FreeCamera(
 						uint_fast64_t maxLvl,

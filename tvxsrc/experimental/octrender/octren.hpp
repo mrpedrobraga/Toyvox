@@ -50,7 +50,7 @@ namespace tvx {
 			 */
 	};
 
-	template<uint_fast64_t maxLvl> // 65536 is spec-required UBO minimum
+	template<uint_fast64_t maxLvl>
 	class Voxtree {
 		public:
 			static constexpr uint_fast64_t leafCount = sprout::pow(8, maxLvl); // FIXME: clang's sprout::pow is off-by-one?
@@ -58,13 +58,14 @@ namespace tvx {
 			static constexpr uint_fast64_t valenceCount = leafCount + scndCount;
 			static constexpr uint_fast64_t trunkCount = (leafCount - 1) / 7;
 			static constexpr uint_fast64_t nuclearCount = (sprout::pow(8, maxLvl - 1) - 1) / 7;
+			static constexpr uint_fast64_t totalCount = (sprout::pow(8, maxLvl + 1) - 1) / 7;
 
 			explicit Voxtree() {
-				buftex = std::make_unique<BufferTexture<32768 * sizeof(VoxelDword)>>();
+				buftex = std::make_unique<BufferTexture<totalCount * sizeof(VoxelDword)>>();
 			}
 
 			void insertLeaf(const VoxelDword &voxel, uint_fast64_t morton) {
-				buftex->writeToCpu<VoxelDword>(morton + trunkCount, voxel);
+				buftex->template writeToCpu<VoxelDword>(morton + trunkCount, voxel);
 			}
 			void insertLeaf(const VoxelDword &voxel, glm::uvec3 pos) {
 				uint_fast32_t morton = libmorton::morton3D_32_encode(pos.x, pos.y, pos.z);
@@ -125,8 +126,9 @@ namespace tvx {
 				}
 			};
 			
-			std::unique_ptr<BufferTexture<32768 * sizeof(VoxelDword)>> buftex;
+			std::unique_ptr<BufferTexture<totalCount * sizeof(VoxelDword)>> buftex;
 			std::array<Accumulator, nuclearCount + scndCount> nuclearAccumulators;
+			int whichScene = 0;
 			
 			VoxelDword getMortonColors(uint_fast64_t morton) {
 				VoxelDword voxel;
@@ -175,22 +177,29 @@ namespace tvx {
 			}
 
 			void fill() {
-				uint_fast64_t valenceIdx = 0, leafIdx = 0, nuclearStart = valenceCount / 2, nuclearCrct = 0, accumIdx = 0;
+				uint_fast64_t valenceIdx = 0, leafIdx = 0, nuclearStart = valenceCount / 2, accumIdx = 0;
+				int_fast64_t nuclearCrct = 0;
 				for (; valenceIdx < valenceCount + nuclearCount; ++valenceIdx) {
 					if (valenceIdx == nuclearStart) {
 						nuclearCrct -= nuclearCount;
 						valenceIdx += nuclearCount; // JUMP THE NUCLEUS
 					}
 					VoxelDword voxel;
-					if ((valenceIdx + nuclearCrct + 1) % 9) { voxel = getAntisphere(leafIdx++); }
+					if ((valenceIdx + nuclearCrct + 1) % 9) {
+						switch(whichScene) {
+							case 0: voxel = getAntisphere(leafIdx++); break;
+							case 1: voxel = getMortonColors(leafIdx++); break;
+							case 2: voxel = getDebugCorners(leafIdx++); break;
+						}
+					}
 					else {
 						nuclearAccumulators[accumIdx].reset();
 						for (int i = -8; i < 0; ++i) {
-							nuclearAccumulators[accumIdx].add(*buftex->cpu<VoxelDword>(valenceIdx + i));
+							nuclearAccumulators[accumIdx].add(*buftex->template cpu<VoxelDword>(valenceIdx + i));
 						}
 						voxel = nuclearAccumulators[accumIdx++].avg();
 					}
-					buftex->writeToCpu<VoxelDword>(valenceIdx, voxel);
+					buftex->template writeToCpu<VoxelDword>(valenceIdx, voxel);
 				}
 				
 				uint_fast64_t nuclearIdx = 0, nuclearInvLvl = 2, nuclearAvgHead = 0;
@@ -202,7 +211,7 @@ namespace tvx {
 						for (; nuclearAvgHead < nuclearAvgLimit; ++nuclearAvgHead) {
 							nuclearAccumulators[accumIdx].add(nuclearAccumulators[nuclearAvgHead].get());
 						}
-						buftex->writeToCpu<VoxelDword>(nuclearStart + nuclearIdx++, nuclearAccumulators[accumIdx++].avg());
+						buftex->template writeToCpu<VoxelDword>(nuclearStart + nuclearIdx++, nuclearAccumulators[accumIdx++].avg());
 					}
 				}
 			}

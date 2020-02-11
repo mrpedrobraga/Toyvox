@@ -8,18 +8,12 @@
 
 using namespace tvx;
 
-static constexpr uint_fast64_t unifBufSize = 512, maxVoxLvl = 4, resX = 400, resY = 300, dspX = 800, dspY = 600;
+static constexpr uint_fast64_t unifBufSize = 512, maxVoxLvl = 7, resX = 400, resY = 300, dspX = 800, dspY = 600;
 static const char *vertCover = "cover.vert", *fragOct = "oct.frag", *fragCover = "cover.frag";
 static constexpr glm::vec3 startPos = glm::vec3(0.3, 0.6, 0.1);
 
 int main(int argc, char **argv) {
 	SdlContext sdlc("Toyvox Octree Rendering Test", dspX, dspY);
-	
-	GLuint shaderOctree = shaderLoadFile(vertCover, fragOct);
-	GLuint shaderPost = shaderLoadFile(vertCover, fragCover);
-	bool reloadShader = false, isQuitRequested = false; // CLICK ANYWHERE IN WINDOW TO RELOAD SHADER FROM FILE
-	Subscription reloadSub("mouse_down_left", [&reloadShader] () -> void { reloadShader = true; });
-	Subscription quitSub("key_down_escape", [&isQuitRequested] () -> void { isQuitRequested = true; }); // ESC EXITS
 
 	ScreenCoveringTriangle tri;
 	IntermediateTexture<GL_RGBA, GL_UNSIGNED_BYTE, GL_NEAREST> irmtex(resX, resY); // GL_RGB565 ?
@@ -27,6 +21,12 @@ int main(int argc, char **argv) {
 	Voxtree<maxVoxLvl> voxtree;
 	
 	voxtree.updateGpu();
+	
+	GLuint shaderOctree = shaderLoadFile(vertCover, fragOct);
+	GLuint shaderPost = shaderLoadFile(vertCover, fragCover);
+	bool reloadShader = false, isQuitRequested = false; // CLICK ANYWHERE IN WINDOW TO RELOAD SHADER FROM FILE
+	Subscription reloadSub("mouse_down_left", [&reloadShader] () -> void { reloadShader = true; });
+	Subscription quitSub("key_down_escape", [&isQuitRequested] () -> void { isQuitRequested = true; }); // ESC EXITS
 	
 	FreeCamera cam(maxVoxLvl, startPos);
 	cam.setAspect(static_cast<float>(sdlc.getWindowWidth()) / static_cast<float>(sdlc.getWindowHeight()));

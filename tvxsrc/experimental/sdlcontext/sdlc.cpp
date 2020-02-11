@@ -174,6 +174,16 @@ namespace tvx {
 								publish("window_grab");
 							}
 						} break;
+						PUB_KEYD(0, SDLK_0)
+						PUB_KEYD(1, SDLK_1)
+						PUB_KEYD(2, SDLK_2)
+						PUB_KEYD(3, SDLK_3)
+						PUB_KEYD(4, SDLK_4)
+						PUB_KEYD(5, SDLK_5)
+						PUB_KEYD(6, SDLK_6)
+						PUB_KEYD(7, SDLK_7)
+						PUB_KEYD(8, SDLK_8)
+						PUB_KEYD(9, SDLK_9)
 						PUB_KEYD(space, SDLK_SPACE)
 						PUB_KEYD(escape, SDLK_ESCAPE)
 						PUB_KEYD(w, SDLK_w)

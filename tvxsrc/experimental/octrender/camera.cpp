@@ -6,7 +6,7 @@ namespace tvx {
 		pos.x += amount *  sinf( yaw ) * cosf( pitch );
 		pos.y += amount * -sinf( pitch );
 		pos.z += amount *  cosf( yaw ) * cosf( pitch );
-		static constexpr float padLo = 0.0001f, padHi = 0.9999f;
+		static constexpr float padLo = 0.f, padHi = 1.f;
 		if (pos.x > padHi) { pos.x = padHi; }
 		if (pos.x < padLo) { pos.x = padLo; }
 		if (pos.y > padHi) { pos.y = padHi; }
@@ -47,8 +47,8 @@ namespace tvx {
 				  gridSub("mouse_wheel", [&](void *data) -> void {
 				  	auto val = reinterpret_cast<int*>(data);
 				  	gridMode += *val;
-				  	if (gridMode > 2) { gridMode -= 3; }
-				  	if (gridMode < 0) { gridMode += 3; }
+				  	if (gridMode > numModes - 1) { gridMode -= numModes; }
+				  	if (gridMode < 0) { gridMode += numModes; }
 				  	ctrl.z = gridMode;
 				  }),
 				  fwSub("key_held_" + fw, [&](void *data) -> void {
