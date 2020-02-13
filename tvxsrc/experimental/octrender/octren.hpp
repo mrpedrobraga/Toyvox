@@ -53,12 +53,15 @@ namespace tvx {
 	template<uint_fast64_t maxLvl>
 	class Voxtree {
 		public:
+			static constexpr int whichScene = 0;
 			static constexpr uint_fast64_t leafCount = sprout::pow(8, maxLvl); // FIXME: clang's sprout::pow is off-by-one?
 			static constexpr uint_fast64_t scndCount = sprout::pow(8, maxLvl - 1);
 			static constexpr uint_fast64_t valenceCount = leafCount + scndCount;
 			static constexpr uint_fast64_t trunkCount = (leafCount - 1) / 7;
 			static constexpr uint_fast64_t nuclearCount = (sprout::pow(8, maxLvl - 1) - 1) / 7;
 			static constexpr uint_fast64_t totalCount = (sprout::pow(8, maxLvl + 1) - 1) / 7;
+			
+			static constexpr uint_fast32_t dimMax = sprout::pow(2, maxLvl);
 
 			explicit Voxtree() {
 				buftex = std::make_unique<BufferTexture<totalCount * sizeof(VoxelDword)>>();
@@ -71,10 +74,10 @@ namespace tvx {
 				uint_fast32_t morton = libmorton::morton3D_32_encode(pos.x, pos.y, pos.z);
 				insertLeaf(voxel, morton);
 			}
-			void updateGpu() {
+			void updateGpu(GLenum texUnit) {
 				fill();
 				buftex->sendToGpu();
-				buftex->use(0);
+				buftex->use(texUnit);
 			}
 
 		private:
@@ -128,7 +131,6 @@ namespace tvx {
 			
 			std::unique_ptr<BufferTexture<totalCount * sizeof(VoxelDword)>> buftex;
 			std::array<Accumulator, nuclearCount + scndCount> nuclearAccumulators;
-			int whichScene = 0;
 			
 			VoxelDword getMortonColors(uint_fast64_t morton) {
 				VoxelDword voxel;
@@ -147,17 +149,34 @@ namespace tvx {
 				return voxel;
 			}
 			
+			VoxelDword getEmptyMap(uint_fast64_t morton) {
+				VoxelDword voxel;
+				uint_fast16_t x, y, z;
+				libmorton::morton3D_32_decode(morton, x, y, z);
+				bool isFilled = (y < 1) || (x < 1) || (z < 1);
+				voxel.setIsFilled(isFilled);
+				if (isFilled) {
+					voxel.setRed(x * 0.5f);
+					voxel.setGreen(y * 0.5f);
+					voxel.setBlue(z * 0.5f);
+				}
+				return voxel;
+			}
+			
 			VoxelDword getAntisphere(uint_fast64_t morton) {
 				VoxelDword voxel;
 				uint_fast16_t x, y, z;
 				libmorton::morton3D_32_decode(morton, x, y, z);
-				bool isFilled = (x > 2 && x <= 13) && (y > 2 && y <= 13) && (z > 2 && z <= 13) &&
-				                glm::length(glm::vec3(x, y, z) / 32.f - glm::vec3(0.25)) > 0.2f;
+				static constexpr uint_fast32_t lo = dimMax / 4 - 1, hi = dimMax * 3 / 4 - 1, md = dimMax / 2;
+				float fromCenter = glm::length(glm::vec3(x, y, z) / static_cast<float>(dimMax) - glm::vec3(0.5f));
+				bool isFilled = (x > lo && x <= hi) && (y > lo && y <= hi) && (z > lo && z <= hi) && fromCenter > 0.32f;
 				voxel.setIsFilled(isFilled);
 				if (isFilled) {
-					voxel.setRed((x * -0.5f - 1));
-					voxel.setGreen((y * -0.5f - 1));
-					voxel.setBlue((z * -0.5f - 1));
+					float radial0 = (fromCenter - .305f) * (dimMax * 0.24);
+					float radial1 = (fromCenter - .313f) * (dimMax * 0.24);
+					voxel.setRed(radial0);
+					voxel.setGreen(0);
+					voxel.setBlue(radial1);
 				}
 				return voxel;
 			}
@@ -190,6 +209,7 @@ namespace tvx {
 							case 0: voxel = getAntisphere(leafIdx++); break;
 							case 1: voxel = getMortonColors(leafIdx++); break;
 							case 2: voxel = getDebugCorners(leafIdx++); break;
+							case 3: voxel = getEmptyMap(leafIdx++); break;
 						}
 					}
 					else {

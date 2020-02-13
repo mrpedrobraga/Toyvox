@@ -2,6 +2,7 @@
 #pragma once
 
 #include "extern.hpp"
+#include "texture.hpp"
 
 namespace tvx {
 	
@@ -11,6 +12,13 @@ namespace tvx {
 		public:
 			ScreenCoveringTriangle();
 			[[nodiscard]] GLuint getVao() const;
+	};
+	
+	class CubeMap {
+			Texture cubeTex;
+		public:
+			explicit CubeMap(const std::string &relPath);
+			void use(GLenum unit);
 	};
 	
 	template<int format, int type, int filter, bool depth = false>

@@ -70,7 +70,8 @@ const uint mortonZ[256] = {
 0x924000, 0x924004, 0x924020, 0x924024, 0x924100, 0x924104, 0x924120, 0x924124, 0x924800, 0x924804, 0x924820, 0x924824,
 0x924900, 0x924904, 0x924920, 0x924924 };
 
-uniform usamplerBuffer buftex;
+layout (binding = 0) uniform usamplerBuffer buftex;
+layout (binding = 1) uniform samplerCube skytex;
 layout (location = 0) in vec2 resIn;
 layout (location = 1) in float timeIn;
 layout (location = 2) in float dtIn;
@@ -133,7 +134,7 @@ bool vdGetIsFilled(uint voxel) { return bool(voxel & 0x400000u); }
 bool vdGetHasChildren(uint voxel) { return bool(voxel & 0xFFu); }
 bool vdGetChildrenFull(uint voxel) { return (voxel & 0xFFu) == 0xFFu; }
 
-uint getVoxelEffect(vec3 pos, float size, inout uint voxel) {
+uint getVoxelEffect(vec3 pos, float size, float dist, inout uint voxel) {
 	if (any(greaterThan(abs(pos * 1.0001 - 0.5), vec3(0.5)))) { return vox_nil; }
 	uint lv = uint(log2(1.0 / size));
 	if (cur_lvl != max_lvl) { // level view mode
@@ -152,6 +153,9 @@ uint getVoxelEffect(vec3 pos, float size, inout uint voxel) {
 		octDwordGet(voxel, lv, pos);
 		if (vdGetIsFilled(voxel)) {
 			if (vdGetHasChildren(voxel)) {
+//				if (dist > 0.5 && vdGetChildrenFull(voxel)) {
+//					return vox_brick;
+//				}
 				return vox_subd;
 			}
 			return vox_brick;
@@ -182,7 +186,7 @@ vec4 rayMarch(vec3 raySrc, vec3 rayDir, float maxdist, inout int curStep, inout 
 		if (dist >= maxdist) { break; }
 		if (recurr == recur) { vec3 q = mod(floor(raySrcInCur / childSize + 0.5) + 0.5, 2.0) - 0.5; }
 		int nextVoxEffect = 0;
-		if (recurrr == recur) { curVoxEffect = int(getVoxelEffect(raySrcInCur, childSize, voxel)); }
+		if (recurrr == recur) { curVoxEffect = int(getVoxelEffect(raySrcInCur, childSize, dist, voxel)); }
 		bool isNil = recurr < recur || nextVoxEffect == vox_nil;
 		if (isNil) { nextVoxEffect = curVoxEffect; }
 		
@@ -245,7 +249,8 @@ void main() {
 	uint voxel = 0;
 	vec4 hit = rayMarch(camPosIn.xyz, rayDir, 2.0, stepsTaken, voxel, hitclass);
 	if (vdGetIsFilled(voxel)) { fsOut.xyz = vec3(vdGetRed(voxel), vdGetGreen(voxel), vdGetBlue(voxel)); }
-	else { fsOut.xyz = vec3(0.05); }
+//	else { fsOut.xyz = vec3(0.05); }
+	else { fsOut.xyz = textureCube(skytex, rayDir).rgb; }
 	
 	fsOut *= fsOut;
 	if (controlsIn.z == 1.0) { fsOut *= floor(hitclass.x); } // grid view

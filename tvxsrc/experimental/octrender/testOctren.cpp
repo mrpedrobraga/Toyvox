@@ -8,7 +8,7 @@
 
 using namespace tvx;
 
-static constexpr uint_fast64_t unifBufSize = 512, maxVoxLvl = 7, resX = 800, resY = 600, dspX = 800, dspY = 600;
+static constexpr uint_fast64_t unifBufSize = 512, maxVoxLvl = 8, resX = 400, resY = 300, dspX = 800, dspY = 600;
 static const char *vertCover = "cover.vert", *fragOct = "oct.frag", *fragCover = "cover.frag";
 static constexpr glm::vec3 startPos = glm::vec3(0.3, 0.6, 0.1);
 
@@ -16,11 +16,13 @@ int main(int argc, char **argv) {
 	SdlContext sdlc("Toyvox Octree Rendering Test", dspX, dspY);
 
 	ScreenCoveringTriangle tri;
+	CubeMap skyTex("assets/cubemaps/sky.png");
 	IntermediateTexture<GL_RGBA, GL_UNSIGNED_BYTE, GL_NEAREST> irmtex(resX, resY); // GL_RGB565 ?
 	GeneralBuffer<unifBufSize, GL_UNIFORM_BUFFER> globals(0);
-	Voxtree<maxVoxLvl> voxtree;
+	std::unique_ptr<Voxtree<maxVoxLvl>> voxtree = std::make_unique<Voxtree<maxVoxLvl>>();
 	
-	voxtree.updateGpu();
+	voxtree->updateGpu(0);
+	skyTex.use(1);
 	
 	GLuint shaderOctree = shaderLoadFile(vertCover, fragOct);
 	GLuint shaderPost = shaderLoadFile(vertCover, fragCover);
@@ -50,7 +52,7 @@ int main(int argc, char **argv) {
 		uniformPackage[3].y = dspY;
 		globals.writeToCpu<glm::mat4>(0, uniformPackage);
 		globals.sendToGpu();
-		
+
 		glBindVertexArray(tri.getVao());
 		glUseProgram(shaderOctree);
 		irmtex.setToGenerate();

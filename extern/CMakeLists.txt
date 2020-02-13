@@ -24,5 +24,7 @@ extern( include libmorton/libmorton/include )
 
 extern( include sprout )
 
+extern( include stb )
+
 # Create an external dependency ui that will appear as ${TARGET_PREFIX}_extern outside of this scope.
 extern( finish )

@@ -20,4 +20,11 @@ namespace tvx {
 	GLuint ScreenCoveringTriangle::getVao() const {
 		return vao;
 	}
+	CubeMap::CubeMap(const std::string &relPath) : cubeTex(relPath, Texture::CUBE) {
+
+	}
+	void CubeMap::use(GLenum unit) {
+		glActiveTexture(GL_TEXTURE0 + unit);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTex.get());
+	}
 }

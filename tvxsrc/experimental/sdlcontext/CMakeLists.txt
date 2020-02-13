@@ -3,6 +3,7 @@ message( "> sdlcontext:" )
 
 add_library( ${TARGET_NAME}_sdlc STATIC
   extern.hpp
+  texture.hpp texture.cpp
   sdlc.hpp sdlc.cpp
   shader.hpp shader.cpp
   topics.hpp topics.cpp
