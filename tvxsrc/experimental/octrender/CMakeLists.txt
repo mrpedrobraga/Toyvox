@@ -3,8 +3,9 @@ message( "> octrender:" )
 
 add_library( ${TARGET_NAME}_octren STATIC
   buffers.hpp buffers.cpp
-  camera.hpp camera.cpp
-  octren.hpp octren.cpp
+  player.hpp player.cpp
+  voctree.hpp voctree.cpp
+  dynamics.hpp
   )
 target_include_directories( ${TARGET_NAME}_octren PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} )
 target_link_libraries( ${TARGET_NAME}_octren PUBLIC ${TARGET_NAME}_sdlc )

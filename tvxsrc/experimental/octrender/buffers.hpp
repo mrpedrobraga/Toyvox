@@ -17,7 +17,7 @@ namespace tvx {
 	class CubeMap {
 			Texture cubeTex;
 		public:
-			explicit CubeMap(const std::string &relPath);
+			explicit CubeMap(const std::string &relPath, bool flip = false);
 			void use(GLenum unit);
 	};
 	

@@ -1,10 +1,7 @@
 
 #include "sdlc.hpp"
 #include "shader.hpp"
-#include "buffers.hpp"
-#include "topics.hpp"
-#include "octren.hpp"
-#include "camera.hpp"
+#include "dynamics.hpp"
 
 using namespace tvx;
 
@@ -16,23 +13,25 @@ int main(int argc, char **argv) {
 	SdlContext sdlc("Toyvox Octree Rendering Test", dspX, dspY);
 
 	ScreenCoveringTriangle tri;
-	CubeMap skyTex("assets/cubemaps/sky.png");
+	CubeMap skyTex("assets/cubemaps/miramar.png");
 	IntermediateTexture<GL_RGBA, GL_UNSIGNED_BYTE, GL_NEAREST> irmtex(resX, resY); // GL_RGB565 ?
 	GeneralBuffer<unifBufSize, GL_UNIFORM_BUFFER> globals(0);
-	std::unique_ptr<Voxtree<maxVoxLvl>> voxtree = std::make_unique<Voxtree<maxVoxLvl>>();
+	std::unique_ptr<Voctree<maxVoxLvl>> voctree = std::make_unique<Voctree<maxVoxLvl>>();
 	
-	voxtree->updateGpu(0);
+	voctree->updateGpu(0);
 	skyTex.use(1);
 	
 	GLuint shaderOctree = shaderLoadFile(vertCover, fragOct);
 	GLuint shaderPost = shaderLoadFile(vertCover, fragCover);
-	bool reloadShader = false, isQuitRequested = false; // CLICK ANYWHERE IN WINDOW TO RELOAD SHADER FROM FILE
-	Subscription reloadSub("mouse_down_left", [&reloadShader] () -> void { reloadShader = true; });
+	bool reloadShader = false, isQuitRequested = false; // MIDDLE-CLICK ANYWHERE IN WINDOW TO RELOAD SHADER FROM FILE
+	Subscription reloadSub("mouse_down_middle", [&reloadShader] () -> void { reloadShader = true; });
 	Subscription quitSub("key_down_escape", [&isQuitRequested] () -> void { isQuitRequested = true; }); // ESC EXITS
+
+	Dynamics<maxVoxLvl> dynamics;
+	Player<maxVoxLvl> player(startPos);
+	player.setAspect(static_cast<float>(sdlc.getWindowWidth()) / static_cast<float>(sdlc.getWindowHeight()));
 	
-	FreeCamera cam(maxVoxLvl, startPos);
-	cam.setAspect(static_cast<float>(sdlc.getWindowWidth()) / static_cast<float>(sdlc.getWindowHeight()));
-	
+	sdlc.getDeltaTime(); // discard time since program start
 	float time = 0.f;
 	while (sdlc.pollEvents(isQuitRequested)) {
 		SdlContext::pollStates();
@@ -43,11 +42,14 @@ int main(int argc, char **argv) {
 			shaderReloadFile(&shaderOctree, vertCover, fragOct);
 			shaderReloadFile(&shaderPost, vertCover, fragCover);
 		}
+		
+		dynamics.tick(dt, player, *voctree);
+		
 		glm::mat4 uniformPackage;
 		uniformPackage[0] = glm::vec4(resX, resY, time, dt);
-		uniformPackage[1] = cam.getPos();
-		uniformPackage[2] = cam.getRot();
-		uniformPackage[3] = cam.getCtrl();
+		uniformPackage[1] = player.getPos();
+		uniformPackage[2] = player.getRot();
+		uniformPackage[3] = player.getCtrl();
 		uniformPackage[3].x = dspX;
 		uniformPackage[3].y = dspY;
 		globals.writeToCpu<glm::mat4>(0, uniformPackage);
@@ -64,7 +66,7 @@ int main(int argc, char **argv) {
 		glUseProgram(0);
 		
 		sdlc.swapWindow();
-		cam.refresh(dt);
+		player.refresh(dt);
 	}
 	return 0;
 }

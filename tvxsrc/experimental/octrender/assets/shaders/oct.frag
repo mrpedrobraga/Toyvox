@@ -86,6 +86,7 @@ layout (location = 0) out vec4 fsOut;
 #define vox_empty 2
 #define vox_brick 3
 #define pi 3.1415926535897932384626433832795
+#define small 0.001
 #define max_lvl uint(camPosIn.w)
 #define cur_lvl uint(controlsIn.w)
 #define leaf_count uint(pow(8, max_lvl))
@@ -166,19 +167,20 @@ uint getVoxelEffect(vec3 pos, float size, float dist, inout uint voxel) {
 
 vec3 voxelHit(vec3 raySrc, vec3 rayDir, float size) {
 	size *= 0.5;
-	vec3 hit = -(sign(rayDir) * (raySrc - size) - size) / max(abs(rayDir), 0.001);
+	vec3 hit = -(sign(rayDir) * (raySrc - size) - size) / max(abs(rayDir), small);
 	return hit;
 }
 
-vec4 rayMarch(vec3 raySrc, vec3 rayDir, float maxdist, inout int curStep, inout uint voxel, out vec4 hitclass) {
+vec3 rayMarch(vec3 raySrc, vec3 rayDir, inout float dist, inout int curStep, inout uint voxel, out vec4 hitclass) {
 	hitclass = vec4(1.0);
 	
-	float childSize = 0.5, dist = 0.0;
+	float childSize = 0.5, maxdist = dist;
+	dist = 0.0;
 	vec3 raySrcInSub = mod(raySrc, childSize), raySrcInCur = raySrc - raySrcInSub, dirs = vec3(0), prevDirs = vec3(0);
 	bool levelUp = false;
 	int recur = 0, recurr = 0, recurrr = 0, curVoxEffect = 0;
 	
-	if (any(greaterThan(abs(raySrc - 0.5), vec3(0.5)))) return vec4(0);
+	if (any(greaterThan(abs(raySrc - 0.5), vec3(0.5)))) return vec3(0);
 	vec3 hit = voxelHit(raySrcInSub, rayDir, childSize);
 	
 	for (; curStep < steps; ++curStep) {
@@ -221,7 +223,7 @@ vec4 rayMarch(vec3 raySrc, vec3 rayDir, float maxdist, inout int curStep, inout 
 			else { dirs = vec3(0, 0, 1); }
 			float len = dot(hit, dirs);
 			hit -= len;
-			hit += dirs * (1.0 / abs(rayDir)) * childSize;
+			hit += dirs * (1.0 / max(abs(rayDir), small)) * childSize;
 			raySrcInSub += rayDir * len - dirs * sign(rayDir) * childSize;
 			vec3 newfro = raySrcInCur + dirs * sign(rayDir) * childSize;
 			dist += len;
@@ -236,7 +238,7 @@ vec4 rayMarch(vec3 raySrc, vec3 rayDir, float maxdist, inout int curStep, inout 
 			hitclass.x = min(hitclass.x, -(max(max(q.x, q.y), q.z)-0.5) * 1000.0 * childSize);
 		}
 	}
-	return vec4(dist, -dirs * sign(rayDir));
+	return vec3(-dirs * sign(rayDir));
 }
 
 void main() {
@@ -245,19 +247,24 @@ void main() {
 	rayDir.zx *= mat2(cos(camRotIn.x), -sin(camRotIn.x), sin(camRotIn.x), cos(camRotIn.x));
 	
 	int stepsTaken = 0;
+	float dist = 2.0;
 	vec4 hitclass = vec4(0.0);
 	uint voxel = 0;
-	vec4 hit = rayMarch(camPosIn.xyz, rayDir, 2.0, stepsTaken, voxel, hitclass);
+	vec3 hit = rayMarch(camPosIn.xyz, rayDir, dist, stepsTaken, voxel, hitclass);
 	if (vdGetIsFilled(voxel)) { fsOut.xyz = vec3(vdGetRed(voxel), vdGetGreen(voxel), vdGetBlue(voxel)); }
-//	else { fsOut.xyz = vec3(0.05); }
 	else { fsOut.xyz = textureCube(skytex, rayDir).rgb; }
+//	else { fsOut.xyz = textureLod(skytex, rayDir, 3).rgb; }
 	
 	fsOut *= fsOut;
 	if (controlsIn.z == 1.0) { fsOut *= floor(hitclass.x); } // grid view
-	else if (controlsIn.z == 2.0 && vdGetIsFilled(voxel)) { fsOut.xyz = abs(hit.yzw); } // normals view
+	else if (controlsIn.z == 2.0 && vdGetIsFilled(voxel)) { fsOut.xyz = abs(hit.xyz); } // normals view
 	else if (controlsIn.z == 3.0) {
 		float heat = pi * 1.5 * (float(stepsTaken) / float(steps));
 		fsOut = vec4(sin(heat), cos(heat), -cos(heat), fsOut.a);
+	} else {
+//		float fog = min(1.0, max(float(stepsTaken) / float(steps), dist));
+		float fog = min(1.0, pow(float(stepsTaken) / float(steps), 2.0));
+		fsOut = mix(fsOut, vec4(0.31, 0.3, 0.33, 1.0), fog);
 	}
 	fsOut = sqrt(fsOut);
 }

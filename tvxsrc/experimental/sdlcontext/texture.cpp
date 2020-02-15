@@ -55,8 +55,7 @@ namespace tvx {
 		stbi_image_free(data);
 	}
 
-	void Texture::loadCubeTexture(const std::string &textureFileBaseName) {
-
+	void Texture::loadCubeTexture(const std::string &textureFileBaseName, bool flip) {
 		// split file an extension names
 		size_t lastDotIndex = textureFileBaseName.find_last_of('.');
 		std::string rawName = textureFileBaseName.substr(0, textureFileBaseName.find_last_of('.'));
@@ -65,22 +64,24 @@ namespace tvx {
 		// generate true file names for separate images (one for each side of cube)
 		std::string front   = std::string(rawName + "/negz" + extName);
 		std::string back    = std::string(rawName + "/posz" + extName);
-		std::string bottom  = std::string(rawName + "/negy" + extName);
-		std::string top     = std::string(rawName + "/posy" + extName);
 		std::string left    = std::string(rawName + "/negx" + extName);
 		std::string right   = std::string(rawName + "/posx" + extName);
+		std::string bottom  = std::string(rawName + "/negy" + extName);
+		std::string top     = std::string(rawName + "/posy" + extName);
 
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
 		
 		int r;
 #   define CONTINUE_IF_SUCCESS(s, f) r = loadCubeSide(s, f); if (r) return;
+			if (flip) { stbi_set_flip_vertically_on_load(true); }
 			CONTINUE_IF_SUCCESS(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, front);
 			CONTINUE_IF_SUCCESS(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, back);
-			CONTINUE_IF_SUCCESS(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, bottom);
-			CONTINUE_IF_SUCCESS(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, top);
 			CONTINUE_IF_SUCCESS(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, left);
 			CONTINUE_IF_SUCCESS(GL_TEXTURE_CUBE_MAP_POSITIVE_X, right);
+			CONTINUE_IF_SUCCESS(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, bottom);
+			CONTINUE_IF_SUCCESS(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, top);
+		if (flip) { stbi_set_flip_vertically_on_load(false); }
 #   undef CONTINUE_IF_SUCCESS
 		
 		glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
@@ -108,7 +109,7 @@ namespace tvx {
 		return 0;
 	}
 
-	Texture::Texture(const std::string &textureFile, RequestedType requestedType) {
+	Texture::Texture(const std::string &textureFile, RequestedType requestedType, bool flip) {
 		switch (requestedType) {
 			case SINGLE: {
 				SDL_Log("Loading texture: %s\n", textureFile.c_str());
@@ -116,7 +117,7 @@ namespace tvx {
 			} break;
 			case CUBE: {
 				SDL_Log("Loading cube map: %s\n", textureFile.c_str());
-				loadCubeTexture(textureFile);
+				loadCubeTexture(textureFile, flip);
 			} break;
 			default: break;
 		}

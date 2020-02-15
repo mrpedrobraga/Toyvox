@@ -51,19 +51,9 @@ namespace tvx {
 	};
 
 	template<uint_fast64_t maxLvl>
-	class Voxtree {
+	class Voctree {
 		public:
-			static constexpr int whichScene = 0;
-			static constexpr uint_fast64_t leafCount = sprout::pow(8, maxLvl); // FIXME: clang's sprout::pow is off-by-one?
-			static constexpr uint_fast64_t scndCount = sprout::pow(8, maxLvl - 1);
-			static constexpr uint_fast64_t valenceCount = leafCount + scndCount;
-			static constexpr uint_fast64_t trunkCount = (leafCount - 1) / 7;
-			static constexpr uint_fast64_t nuclearCount = (sprout::pow(8, maxLvl - 1) - 1) / 7;
-			static constexpr uint_fast64_t totalCount = (sprout::pow(8, maxLvl + 1) - 1) / 7;
-			
-			static constexpr uint_fast32_t dimMax = sprout::pow(2, maxLvl);
-
-			explicit Voxtree() {
+			explicit Voctree() {
 				buftex = std::make_unique<BufferTexture<totalCount * sizeof(VoxelDword)>>();
 			}
 
@@ -79,8 +69,38 @@ namespace tvx {
 				buftex->sendToGpu();
 				buftex->use(texUnit);
 			}
+			struct VoxelRayResult {
+				VoxelDword *vox = nullptr;
+				glm::vec3 norm = glm::vec3(0);
+				float dist = 2.f; // serves as maxDist
+				uint_fast32_t steps = 0;
+			};
+			VoxelRayResult ray(const glm::vec3 &raySrc, const glm::vec3 &rayDir) {
+				VoxelRayResult res;
+				res.norm = rayMarch(raySrc, rayDir, res.dist, res.steps, res.vox);
+				return res;
+			}
+
+			static constexpr uint_fast32_t dimMax = sprout::pow(2, maxLvl);
+			static constexpr float toMeters = 1.f / dimMax;
 
 		private:
+
+			static constexpr int whichScene = 4;
+			
+			static constexpr uint_fast64_t leafCount = sprout::pow(8, maxLvl); // FIXME: clang's sprout::pow is off-by-one?
+			static constexpr uint_fast64_t scndCount = sprout::pow(8, maxLvl - 1);
+			static constexpr uint_fast64_t valenceCount = leafCount + scndCount;
+			static constexpr uint_fast64_t trunkCount = (leafCount - 1) / 7;
+			static constexpr uint_fast64_t nuclearCount = (sprout::pow(8, maxLvl - 1) - 1) / 7;
+			static constexpr uint_fast64_t totalCount = (sprout::pow(8, maxLvl + 1) - 1) / 7;
+			
+			static constexpr uint_fast32_t steps =  100;
+			static constexpr uint_fast32_t vox_nil =  0;
+			static constexpr uint_fast32_t vox_subd =  1;
+			static constexpr uint_fast32_t vox_empty =  2;
+			static constexpr uint_fast32_t vox_brick =  3;
+			static constexpr float small = 0.001f;
 
 			struct Accumulator {
 				VoxelDword voxel = {};
@@ -149,7 +169,7 @@ namespace tvx {
 				return voxel;
 			}
 			
-			VoxelDword getEmptyMap(uint_fast64_t morton) {
+			VoxelDword getWorstCase(uint_fast64_t morton) {
 				VoxelDword voxel;
 				uint_fast16_t x, y, z;
 				libmorton::morton3D_32_decode(morton, x, y, z);
@@ -159,6 +179,21 @@ namespace tvx {
 					voxel.setRed(x * 0.5f);
 					voxel.setGreen(y * 0.5f);
 					voxel.setBlue(z * 0.5f);
+				}
+				return voxel;
+			}
+
+			VoxelDword getFlat(uint_fast64_t morton) {
+				VoxelDword voxel;
+				uint_fast16_t x, y, z;
+				libmorton::morton3D_32_decode(morton, x, y, z);
+				bool isFilled = (y < pow(2, maxLvl - 2));
+				voxel.setIsFilled(isFilled);
+				if (isFilled) {
+					uint_fast32_t scale = dimMax / 8; 
+					voxel.setRed(x / scale);
+					voxel.setGreen(z / scale);
+					voxel.setBlue(8 - (x + y + z) / scale / 2);
 				}
 				return voxel;
 			}
@@ -209,7 +244,9 @@ namespace tvx {
 							case 0: voxel = getAntisphere(leafIdx++); break;
 							case 1: voxel = getMortonColors(leafIdx++); break;
 							case 2: voxel = getDebugCorners(leafIdx++); break;
-							case 3: voxel = getEmptyMap(leafIdx++); break;
+							case 3: voxel = getWorstCase(leafIdx++); break;
+							case 4: voxel = getFlat(leafIdx++); break;
+							default: break;
 						}
 					}
 					else {
@@ -236,5 +273,107 @@ namespace tvx {
 				}
 			}
 
+
+			/*
+			 * Raymarching routines for picking voxels are as similar as possible to those found in the shader.
+			 */
+			static inline uint_fast32_t sumOfPowers(uint_fast32_t top) { return (glm::pow(8, top) - 1) / 7; }
+			void octDwordGet(VoxelDword *&voxel, uint_fast32_t lvl, glm::vec3 pos) {
+				uint_fast32_t invLvl = maxLvl - lvl, lvlOffset = 0, linearIdx = 0;
+				float voxInvScale = glm::pow(2, lvl);
+				glm::vec3 upos(pos * voxInvScale);
+				linearIdx = libmorton::morton3D_32_encode(upos.x, upos.y, upos.z);
+				switch(invLvl) {
+					case 0: { lvlOffset += (linearIdx < leafCount / 2 ? 0 : nuclearCount) + (linearIdx) / 8; } break;
+					case 1: {
+						lvlOffset += 8 + ((linearIdx < scndCount / 2) ? 0 : nuclearCount);
+						linearIdx *= 9;
+					} break;
+					default: {
+						lvlOffset += (leafCount + scndCount) / 2 + glm::max(0lu, sumOfPowers(maxLvl - 1) - sumOfPowers(lvl + 1));
+					}
+				}
+				voxel = buftex->template cpu<VoxelDword>(static_cast<uint_fast64_t>(linearIdx + lvlOffset));
+			}
+			uint_fast32_t getVoxelEffect(glm::vec3 pos, float size, VoxelDword *&voxel) {
+				if (glm::any(glm::greaterThan(glm::abs(pos * 1.0001f - 0.5f), glm::vec3(0.5f)))) { return vox_nil; }
+				auto lv = static_cast<uint_fast32_t>(glm::log2(1.f / size));
+				octDwordGet(voxel, lv, pos);
+				
+				if (voxel->getIsFilled()) {
+					if (voxel->getChildMasked(0xFF)) {
+						return vox_subd;
+					}
+					return vox_brick;
+				}
+				return vox_empty;
+			}
+			glm::vec3 voxelHit(glm::vec3 raySrc, glm::vec3 rayDir, float size) {
+				size *= 0.5f;
+				glm::vec3 hit = -(glm::sign(rayDir) * (raySrc - size) - size) / glm::max(glm::abs(rayDir), small);
+				return hit;
+			}
+			glm::vec3 rayMarch(glm::vec3 raySrc, glm::vec3 rayDir, float &dist, uint_fast32_t &curStep, VoxelDword *&voxel) {
+				float childSize = 0.5f, maxdist = dist;
+				dist = 0.f;
+				glm::vec3 raySrcInSub = glm::mod(raySrc, childSize), raySrcInCur = raySrc - raySrcInSub, dirs(0), prevDirs(0);
+				bool levelUp = false;
+				int recur = 0, recurr = 0, recurrr = 0, curVoxEffect = 0;
+
+				if (glm::any(glm::greaterThan(glm::abs(raySrc - 0.5f), glm::vec3(0.5f)))) return glm::vec4(0);
+				glm::vec3 hit = voxelHit(raySrcInSub, rayDir, childSize);
+
+				for (; curStep < steps; ++curStep) {
+
+					if (dist >= maxdist) { break; }
+					int nextVoxEffect = 0;
+					if (recurrr == recur) { curVoxEffect = int(getVoxelEffect(raySrcInCur, childSize, voxel)); }
+					bool isNil = recurr < recur || nextVoxEffect == vox_nil;
+					if (isNil) { nextVoxEffect = curVoxEffect; }
+
+					if (levelUp) { // go up a level
+
+						if (recurr == recur) { recurr--; }
+						if (recurrr == recur) { recurrr--; }
+						glm::vec3 newfro = glm::floor(raySrcInCur / childSize * 0.5f + 0.25f) * childSize * 2.f;
+						raySrcInSub += raySrcInCur - newfro;
+						raySrcInCur = newfro;
+						recur--;
+						childSize *= 2.0;
+						hit = voxelHit(raySrcInSub, rayDir, childSize);
+						if (recur < 0) break;
+						levelUp = (glm::abs(glm::dot(glm::mod(raySrcInCur / childSize + 0.5f, 2.f) -
+						                             1.f + dirs * glm::sign(rayDir) * 0.5f, dirs)) < 0.1f);
+
+					} else if (nextVoxEffect == vox_subd) { // subdivide
+
+						recur++;
+						if (curVoxEffect == vox_subd) { recurrr++; }
+						childSize *= 0.5;
+						glm::vec3 mask2 = glm::step(glm::vec3(childSize), raySrcInSub); // which of 8
+						raySrcInCur += mask2 * childSize;
+						raySrcInSub -= mask2 * childSize;
+						hit = voxelHit(raySrcInSub, rayDir, childSize);
+
+					} else if (nextVoxEffect == vox_nil || nextVoxEffect == vox_empty) { // forward
+						
+						if (hit.x < glm::min(hit.y, hit.z)) { dirs = glm::vec3(1, 0, 0); }
+						else if (hit.y < hit.z) { dirs = glm::vec3(0, 1, 0); }
+						else { dirs = glm::vec3(0, 0, 1); }
+						float len = glm::dot(hit, dirs);
+						hit -= len;
+						hit += dirs * (1.f / glm::max(glm::abs(rayDir), small)) * childSize;
+						raySrcInSub += rayDir * len - dirs * glm::sign(rayDir) * childSize;
+						glm::vec3 newfro = raySrcInCur + dirs * glm::sign(rayDir) * childSize;
+						dist += len;
+						levelUp = (glm::floor(newfro / childSize * 0.5f + 0.25f) !=
+						           glm::floor(raySrcInCur / childSize * 0.5f + 0.25f));
+						raySrcInCur = newfro;
+						prevDirs = dirs;
+
+					} else { break; }
+				}
+				return glm::vec3(-dirs * glm::sign(rayDir));
+			}
 	};
 }

@@ -186,6 +186,7 @@ namespace tvx {
 						PUB_KEYD(9, SDLK_9)
 						PUB_KEYD(space, SDLK_SPACE)
 						PUB_KEYD(escape, SDLK_ESCAPE)
+						PUB_KEYD(tab, SDLK_TAB)
 						PUB_KEYD(w, SDLK_w)
 						PUB_KEYD(a, SDLK_a)
 						PUB_KEYD(s, SDLK_s)

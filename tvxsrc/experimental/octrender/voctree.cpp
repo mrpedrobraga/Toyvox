@@ -1,5 +1,5 @@
 
-#include "octren.hpp"
+#include "voctree.hpp"
 
 namespace tvx {
 
