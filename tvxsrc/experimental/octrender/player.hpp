@@ -7,13 +7,14 @@ namespace tvx {
 	
 	void limitPosition(glm::vec4 &pos);
 	void flyFree(glm::vec4 &pos, float amount, float pitch, float yaw);
+	void walkFlat(glm::vec4 &pos, float amount, float pitch, float yaw);
 	
 	/**
 	 * Quick-and-dirty user control mechanism for testing
 	 */
 	template<int_fast32_t maxLvl>
 	class Player {
-			glm::vec4 pos, vel, rot, ctrl;
+			glm::vec4 pos, vel, rot, ctrl, walk;
 			double pitch = 0.001337, yaw = 0.001337;
 			float dt = 0.f, gridMode = 0.f, aspect = 1.f, sensitivity = 0.5, speed = 8.0 * Voctree<maxLvl>::toMeters;
 			int_fast32_t curLvl;
@@ -33,17 +34,19 @@ namespace tvx {
 					} break;
 					case Movement::FORWARD: {
 						if (freeMove) { flyFree(pos, dt * speed * 8, static_cast<float>(pitch), static_cast<float>(yaw)); }
-						else { flyFree(pos, dt * speed, 0.f, static_cast<float>(yaw)); }
+						else { walkFlat(walk, 1, 0.f, static_cast<float>(yaw)); }
 					} break;
 					case Movement::BACKWARD: {
 						if (freeMove) { flyFree(pos, dt * speed * 8, static_cast<float>(pitch + M_PI), static_cast<float>(yaw)); }
-						else { flyFree(pos, dt * speed, M_PI, static_cast<float>(yaw)); }
+						else { walkFlat(walk, 1, M_PI, static_cast<float>(yaw)); }
 					} break;
 					case Movement::LEFT: {
-						flyFree(pos, dt * speed * (freeMove ? 8 : 1), 0.f, static_cast<float>(yaw - M_PI_2));
+						if (freeMove) { flyFree(pos, speed * 8, 0.f, static_cast<float>(yaw - M_PI_2)); }
+						else { walkFlat(walk, 1, 0, static_cast<float>(yaw - M_PI_2)); }
 					} break;
 					case Movement::RIGHT: {
-						flyFree(pos, dt * speed * (freeMove ? 8 : 1), 0.f, static_cast<float>(yaw + M_PI_2));
+						if (freeMove) { flyFree(pos, speed * 8, 0.f, static_cast<float>(yaw + M_PI_2)); }
+						else { walkFlat(walk, 1, 0, static_cast<float>(yaw + M_PI_2)); }
 					} break;
 				}
 			}
@@ -62,7 +65,7 @@ namespace tvx {
 						const std::string &dn = "c",
 						const std::string &jmp = "space",
 						const std::string &fly = "tab"
-			) : pos(glm::vec4(start, 1.f)), vel(0), rot(), ctrl(1, 1, 0, maxLvl), curLvl(maxLvl),
+			) : pos(glm::vec4(start, 1.f)), vel(0), rot(), ctrl(1, 1, 0, maxLvl), walk(0.f), curLvl(maxLvl),
 			   mouseMoveSub("mouse_moved", [&](void *data) -> void {
 				   auto e = reinterpret_cast<SDL_Event *>(data);
 				   yaw += e->motion.xrel * dt * sensitivity * aspect;
@@ -138,12 +141,17 @@ namespace tvx {
 				}
 			}
 			void tickDynamics() {
-				if ( ! freeMove) {
+				if (freeMove) {
+					vel = glm::vec4(0);
+				} else {
+					if (glm::length(walk)) {
+						walk = glm::normalize(walk);
+						pos += walk * speed * dt;
+					}
 					pos += vel * dt;
 					limitPosition(pos);
-				} else {
-					vel = glm::vec4(0);
 				}
+				walk = glm::vec4(0);
 			}
 	};
 }

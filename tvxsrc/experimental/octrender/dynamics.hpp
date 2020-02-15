@@ -10,6 +10,8 @@ namespace tvx {
 			
 			void tick(float dt, Player<maxVoxLvl> &player, Voctree<maxVoxLvl> &voctree) {
 				
+				if (player.freeMove) { return; }
+				
 				glm::vec3 rayForward(0, 0, 1), camRot = player.getRot();
 				rayForward.zy() = glm::mat2(cos(camRot.y), -sin(camRot.y), sin(camRot.y), cos(camRot.y)) * rayForward.zy();
 				rayForward.zx() = glm::mat2(cos(camRot.x), -sin(camRot.x), sin(camRot.x), cos(camRot.x)) * rayForward.zx();

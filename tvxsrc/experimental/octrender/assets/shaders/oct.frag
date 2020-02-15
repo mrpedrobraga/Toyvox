@@ -86,7 +86,6 @@ layout (location = 0) out vec4 fsOut;
 #define vox_empty 2
 #define vox_brick 3
 #define pi 3.1415926535897932384626433832795
-#define small 0.001
 #define max_lvl uint(camPosIn.w)
 #define cur_lvl uint(controlsIn.w)
 #define leaf_count uint(pow(8, max_lvl))
@@ -154,9 +153,6 @@ uint getVoxelEffect(vec3 pos, float size, float dist, inout uint voxel) {
 		octDwordGet(voxel, lv, pos);
 		if (vdGetIsFilled(voxel)) {
 			if (vdGetHasChildren(voxel)) {
-//				if (dist > 0.5 && vdGetChildrenFull(voxel)) {
-//					return vox_brick;
-//				}
 				return vox_subd;
 			}
 			return vox_brick;
@@ -167,7 +163,7 @@ uint getVoxelEffect(vec3 pos, float size, float dist, inout uint voxel) {
 
 vec3 voxelHit(vec3 raySrc, vec3 rayDir, float size) {
 	size *= 0.5;
-	vec3 hit = -(sign(rayDir) * (raySrc - size) - size) / max(abs(rayDir), small);
+	vec3 hit = -(sign(rayDir) * (raySrc - size) - size) / max(abs(rayDir), 0.001);
 	return hit;
 }
 
@@ -223,7 +219,7 @@ vec3 rayMarch(vec3 raySrc, vec3 rayDir, inout float dist, inout int curStep, ino
 			else { dirs = vec3(0, 0, 1); }
 			float len = dot(hit, dirs);
 			hit -= len;
-			hit += dirs * (1.0 / max(abs(rayDir), small)) * childSize;
+			hit += dirs * (1.0 / abs(rayDir)) * childSize;
 			raySrcInSub += rayDir * len - dirs * sign(rayDir) * childSize;
 			vec3 newfro = raySrcInCur + dirs * sign(rayDir) * childSize;
 			dist += len;
@@ -262,7 +258,6 @@ void main() {
 		float heat = pi * 1.5 * (float(stepsTaken) / float(steps));
 		fsOut = vec4(sin(heat), cos(heat), -cos(heat), fsOut.a);
 	} else {
-//		float fog = min(1.0, max(float(stepsTaken) / float(steps), dist));
 		float fog = min(1.0, pow(float(stepsTaken) / float(steps), 2.0));
 		fsOut = mix(fsOut, vec4(0.31, 0.3, 0.33, 1.0), fog);
 	}

@@ -17,4 +17,9 @@ namespace tvx {
 		pos.z += amount *  cosf(yaw) * cosf(pitch);
 		limitPosition(pos);
 	}
+	void walkFlat(glm::vec4 &walk, float amount, float pitch, float yaw) {
+		walk.x += amount *  sinf(yaw) * cosf(pitch);
+		walk.y += amount * -sinf(pitch);
+		walk.z += amount *  cosf(yaw) * cosf(pitch);
+	}
 }
