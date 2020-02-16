@@ -73,16 +73,22 @@ namespace tvx {
 			}
 			struct VoxelRayResult {
 				VoxelDword *vox = nullptr;
-				glm::vec3 norm = glm::vec3(0);
+				glm::uvec3 pos = glm::uvec3(0);
+				glm::uvec3 norm = glm::uvec3(0);
 				float dist = 2.f; // serves as maxDist
 				uint_fast32_t steps = 0;
 				bool hit = false;
 			};
 			VoxelRayResult ray(const glm::vec3 &raySrc, const glm::vec3 &rayDir) {
 				VoxelRayResult res;
-				res.norm = rayMarch(raySrc, rayDir, res.dist, res.steps, res.vox);
-				if (res.steps < steps) { res.hit = true; }
+				rayMarch(raySrc, rayDir, res);
 				return res;
+			}
+			VoxelDword &at(const glm::uvec3 pos) {
+				uint_fast64_t idx = libmorton::morton3D_32_encode(pos.x, pos.y, pos.z);
+				idx += idx / 9;
+				if (idx >= valenceCount / 2) { idx += nuclearCount; }
+				return *buftex->template cpu<VoxelDword>(idx);
 			}
 
 			static constexpr uint_fast32_t dimMax = sprout::pow(2, maxLvl);
@@ -317,21 +323,21 @@ namespace tvx {
 				glm::vec3 hit = -(glm::sign(rayDir) * (raySrc - size) - size) / glm::max(glm::abs(rayDir), small);
 				return hit;
 			}
-			glm::vec3 rayMarch(glm::vec3 raySrc, glm::vec3 rayDir, float &dist, uint_fast32_t &curStep, VoxelDword *&voxel) {
-				float childSize = 0.5f, maxdist = dist;
-				dist = 0.f;
+			void rayMarch(glm::vec3 raySrc, glm::vec3 rayDir, VoxelRayResult &res) {
+				float childSize = 0.5f, maxdist = res.dist;
+				res.dist = 0.f;
 				glm::vec3 raySrcInSub = glm::mod(raySrc, childSize), raySrcInCur = raySrc - raySrcInSub, dirs(0), prevDirs(0);
 				bool levelUp = false;
 				int recur = 0, recurr = 0, recurrr = 0, curVoxEffect = 0;
 
-				if (glm::any(glm::greaterThan(glm::abs(raySrc - 0.5f), glm::vec3(0.5f)))) return glm::vec4(0);
+				if (glm::any(glm::greaterThan(glm::abs(raySrc - 0.5f), glm::vec3(0.5f)))) { return; }
 				glm::vec3 hit = voxelHit(raySrcInSub, rayDir, childSize);
 
-				for (; curStep < steps; ++curStep) {
+				for (; res.steps < steps; ++res.steps) {
 
-					if (dist >= maxdist) { break; }
+					if (res.dist >= maxdist) { break; }
 					int nextVoxEffect = 0;
-					if (recurrr == recur) { curVoxEffect = int(getVoxelEffect(raySrcInCur, childSize, voxel)); }
+					if (recurrr == recur) { curVoxEffect = int(getVoxelEffect(raySrcInCur, childSize, res.vox)); }
 					bool isNil = recurr < recur || nextVoxEffect == vox_nil;
 					if (isNil) { nextVoxEffect = curVoxEffect; }
 
@@ -369,7 +375,7 @@ namespace tvx {
 						hit += dirs * (1.f / glm::max(glm::abs(rayDir), small)) * childSize;
 						raySrcInSub += rayDir * len - dirs * glm::sign(rayDir) * childSize;
 						glm::vec3 newfro = raySrcInCur + dirs * glm::sign(rayDir) * childSize;
-						dist += len;
+						res.dist += len;
 						levelUp = (glm::floor(newfro / childSize * 0.5f + 0.25f) !=
 						           glm::floor(raySrcInCur / childSize * 0.5f + 0.25f));
 						raySrcInCur = newfro;
@@ -377,7 +383,9 @@ namespace tvx {
 
 					} else { break; }
 				}
-				return glm::vec3(-dirs * glm::sign(rayDir));
+				res.pos = (static_cast<float>(dimMax) * raySrcInCur);
+				res.norm = glm::uvec3(-dirs * glm::sign(rayDir));
+				res.hit = res.steps < steps && res.vox && res.vox->getIsFilled();
 			}
 	};
 }

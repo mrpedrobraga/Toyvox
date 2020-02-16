@@ -25,9 +25,13 @@ namespace tvx {
 					rayForward = glm::rotateX(rayForward, -camRot.y);
 					rayForward = glm::rotateY(rayForward, camRot.x);
 					auto rayForwardResult = voctree.ray(player.getPos(), rayForward);
-					if (rayForwardResult.hit && rayForwardResult.vox) {
-						rayForwardResult.vox->setRed(7);
-						rayForwardResult.vox->setIsFilled(true);
+					if (rayForwardResult.hit) {
+						// VoxelDword &target = voctree.at(rayForwardResult.pos + rayForwardResult.norm);
+						VoxelDword &target = *rayForwardResult.vox;
+						target.setRed(7);
+						target.setGreen(0);
+						target.setBlue(0);
+						target.setIsFilled(true);
 						voctree.updateGpu(0);
 					}
 				}
