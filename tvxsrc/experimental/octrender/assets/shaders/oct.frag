@@ -258,7 +258,9 @@ void main() {
 		float heat = pi * 1.5 * (float(stepsTaken) / float(steps));
 		fsOut = vec4(sin(heat), cos(heat), -cos(heat), fsOut.a);
 	} else {
-		float fog = min(1.0, pow(float(stepsTaken) / float(steps), 2.0));
+//		float fogRamp = max(0, (float(stepsTaken - steps / 4) / float(steps)) * (4 / 3));
+		float fogRamp = float(stepsTaken) / float(steps);
+		float fog = min(1.0, pow(fogRamp, 2.0));
 		fsOut = mix(fsOut, vec4(0.31, 0.3, 0.33, 1.0), fog);
 	}
 	fsOut = sqrt(fsOut);

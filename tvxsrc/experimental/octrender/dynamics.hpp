@@ -6,16 +6,33 @@
 namespace tvx {
 	template<uint_fast64_t maxVoxLvl>
 	class Dynamics {
+			Subscription lClickSub, rClickSub;
+			bool lClicked = false, rClicked = false;
+
 		public:
+
+			Dynamics()
+						:
+						lClickSub("mouse_down_left", [&](void *data) -> void { lClicked = true; }),
+						rClickSub("mouse_down_right", [&](void *data) -> void { rClicked = true; })
+			{ }
 			
 			void tick(float dt, Player<maxVoxLvl> &player, Voctree<maxVoxLvl> &voctree) {
 				
-				if (player.freeMove) { return; }
+				if (lClicked) {
+					lClicked = false;
+					glm::vec3 rayForward(0, 0, 1), camRot = player.getRot();
+					rayForward = glm::rotateX(rayForward, -camRot.y);
+					rayForward = glm::rotateY(rayForward, camRot.x);
+					auto rayForwardResult = voctree.ray(player.getPos(), rayForward);
+					if (rayForwardResult.hit && rayForwardResult.vox) {
+						rayForwardResult.vox->setRed(7);
+						rayForwardResult.vox->setIsFilled(true);
+						voctree.updateGpu(0);
+					}
+				}
 				
-				glm::vec3 rayForward(0, 0, 1), camRot = player.getRot();
-				rayForward.zy() = glm::mat2(cos(camRot.y), -sin(camRot.y), sin(camRot.y), cos(camRot.y)) * rayForward.zy();
-				rayForward.zx() = glm::mat2(cos(camRot.x), -sin(camRot.x), sin(camRot.x), cos(camRot.x)) * rayForward.zx();
-				auto rayForwardResult = voctree.ray(player.getPos(), rayForward);
+				if (player.freeMove) { return; }
 				
 				glm::vec3 rayDownward(0, -1, 0);
 				auto rayDownwardResult = voctree.ray(player.getPos(), rayDownward);

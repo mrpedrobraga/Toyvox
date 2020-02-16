@@ -41,11 +41,11 @@ namespace tvx {
 						else { walkFlat(walk, 1, M_PI, static_cast<float>(yaw)); }
 					} break;
 					case Movement::LEFT: {
-						if (freeMove) { flyFree(pos, speed * 8, 0.f, static_cast<float>(yaw - M_PI_2)); }
+						if (freeMove) { flyFree(pos, dt * speed * 8, 0.f, static_cast<float>(yaw - M_PI_2)); }
 						else { walkFlat(walk, 1, 0, static_cast<float>(yaw - M_PI_2)); }
 					} break;
 					case Movement::RIGHT: {
-						if (freeMove) { flyFree(pos, speed * 8, 0.f, static_cast<float>(yaw + M_PI_2)); }
+						if (freeMove) { flyFree(pos, dt * speed * 8, 0.f, static_cast<float>(yaw + M_PI_2)); }
 						else { walkFlat(walk, 1, 0, static_cast<float>(yaw + M_PI_2)); }
 					} break;
 				}
@@ -111,6 +111,7 @@ namespace tvx {
 			[[nodiscard]] glm::vec4 getVel() const { return vel; }
 			[[nodiscard]] glm::vec4 getRot() const { return rot; }
 			[[nodiscard]] glm::vec4 getCtrl() const { return ctrl; }
+			[[nodiscard]] glm::vec4 getWalk() const { return walk; }
 			void refresh(float delta) {
 				dt = delta;
 				rot.z = 1;

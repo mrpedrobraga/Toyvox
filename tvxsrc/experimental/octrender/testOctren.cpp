@@ -18,6 +18,7 @@ int main(int argc, char **argv) {
 	GeneralBuffer<unifBufSize, GL_UNIFORM_BUFFER> globals(0);
 	std::unique_ptr<Voctree<maxVoxLvl>> voctree = std::make_unique<Voctree<maxVoxLvl>>();
 	
+	voctree->generate();
 	voctree->updateGpu(0);
 	skyTex.use(1);
 	
@@ -27,9 +28,9 @@ int main(int argc, char **argv) {
 	Subscription reloadSub("mouse_down_middle", [&reloadShader] () -> void { reloadShader = true; });
 	Subscription quitSub("key_down_escape", [&isQuitRequested] () -> void { isQuitRequested = true; }); // ESC EXITS
 
-	Dynamics<maxVoxLvl> dynamics;
 	Player<maxVoxLvl> player(startPos);
 	player.setAspect(static_cast<float>(sdlc.getWindowWidth()) / static_cast<float>(sdlc.getWindowHeight()));
+	Dynamics<maxVoxLvl> dynamics;
 	
 	sdlc.getDeltaTime(); // discard time since program start
 	float time = 0.f;

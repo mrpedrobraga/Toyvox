@@ -64,8 +64,10 @@ namespace tvx {
 				uint_fast32_t morton = libmorton::morton3D_32_encode(pos.x, pos.y, pos.z);
 				insertLeaf(voxel, morton);
 			}
-			void updateGpu(GLenum texUnit) {
+			void generate() {
 				fill();
+			}
+			void updateGpu(GLenum texUnit) {
 				buftex->sendToGpu();
 				buftex->use(texUnit);
 			}
@@ -74,10 +76,12 @@ namespace tvx {
 				glm::vec3 norm = glm::vec3(0);
 				float dist = 2.f; // serves as maxDist
 				uint_fast32_t steps = 0;
+				bool hit = false;
 			};
 			VoxelRayResult ray(const glm::vec3 &raySrc, const glm::vec3 &rayDir) {
 				VoxelRayResult res;
 				res.norm = rayMarch(raySrc, rayDir, res.dist, res.steps, res.vox);
+				if (res.steps < steps) { res.hit = true; }
 				return res;
 			}
 
