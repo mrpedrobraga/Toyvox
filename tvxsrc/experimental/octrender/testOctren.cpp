@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
 	std::unique_ptr<Voctree<maxVoxLvl>> voctree = std::make_unique<Voctree<maxVoxLvl>>();
 	
 	voctree->generate();
-	voctree->updateGpu(0);
+	voctree->sendToGpu(0);
 	skyTex.use(1);
 	
 	GLuint shaderOctree = shaderLoadFile(vertCover, fragOct);

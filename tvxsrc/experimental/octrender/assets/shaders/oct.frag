@@ -230,8 +230,8 @@ vec3 rayMarch(vec3 raySrc, vec3 rayDir, inout float dist, inout int curStep, ino
 		} else { break; }
 		
 		if (controlsIn.z == 1) { // draw grid
-			vec3 q = abs(raySrcInSub / childSize - 0.5) * (1.0 - prevDirs);
-			hitclass.x = min(hitclass.x, -(max(max(q.x, q.y), q.z)-0.5) * 1000.0 * childSize);
+			vec3 q = abs(raySrcInSub / (childSize) - 0.5) * (1.0 - prevDirs);
+			hitclass.x = min(hitclass.x, -(max(max(q.x, q.y), q.z) - 0.5) * 100.0 - 0.01 / childSize);
 		}
 	}
 	return vec3(-dirs * sign(rayDir));

@@ -19,21 +19,27 @@ namespace tvx {
 			
 			void tick(float dt, Player<maxVoxLvl> &player, Voctree<maxVoxLvl> &voctree) {
 				
-				if (lClicked) {
-					lClicked = false;
+				if (lClicked || rClicked) {
 					glm::vec3 rayForward(0, 0, 1), camRot = player.getRot();
 					rayForward = glm::rotateX(rayForward, -camRot.y);
 					rayForward = glm::rotateY(rayForward, camRot.x);
 					auto rayForwardResult = voctree.ray(player.getPos(), rayForward);
 					if (rayForwardResult.hit) {
-						// VoxelDword &target = voctree.at(rayForwardResult.pos + rayForwardResult.norm);
-						VoxelDword &target = *rayForwardResult.vox;
-						target.setRed(7);
-						target.setGreen(0);
-						target.setBlue(0);
-						target.setIsFilled(true);
-						voctree.updateGpu(0);
+						if (lClicked) {
+							VoxelDword &target = voctree.at(rayForwardResult.pos + rayForwardResult.norm);
+							target.setRed(7);
+							target.setGreen(0);
+							target.setBlue(0);
+							target.setIsFilled(true);
+						} else if (rClicked) {
+							VoxelDword &target = *rayForwardResult.vox;
+							target.setIsFilled(false);
+						}
+						voctree.recalcInterior();
+						voctree.sendToGpu(0);
 					}
+					lClicked = false;
+					rClicked = false;
 				}
 				
 				if (player.freeMove) { return; }

@@ -34,6 +34,7 @@ namespace tvx {
 			[[nodiscard]] uint_fast8_t getLightness() const;
 			void setBits(uint32_t in);
 			void setChildOn(OctCoordCartesian which);
+			void setChildOff(OctCoordCartesian which);
 			void setChildren(uint8_t in);
 			void setIsFilled(bool in);
 			void setIsMetal(bool in);
@@ -57,17 +58,9 @@ namespace tvx {
 				buftex = std::make_unique<BufferTexture<totalCount * sizeof(VoxelDword)>>();
 			}
 
-			void insertLeaf(const VoxelDword &voxel, uint_fast64_t morton) {
-				buftex->template writeToCpu<VoxelDword>(morton + trunkCount, voxel);
-			}
-			void insertLeaf(const VoxelDword &voxel, glm::uvec3 pos) {
-				uint_fast32_t morton = libmorton::morton3D_32_encode(pos.x, pos.y, pos.z);
-				insertLeaf(voxel, morton);
-			}
-			void generate() {
-				fill();
-			}
-			void updateGpu(GLenum texUnit) {
+			void generate() { fillCpu(true); }
+			void recalcInterior() { fillCpu(false); }
+			void sendToGpu(GLenum texUnit) {
 				buftex->sendToGpu();
 				buftex->use(texUnit);
 			}
@@ -84,15 +77,15 @@ namespace tvx {
 				rayMarch(raySrc, rayDir, res);
 				return res;
 			}
-			VoxelDword &at(const glm::uvec3 pos) {
+			VoxelDword &at(const glm::uvec3 &pos) {
+				// FIXME: Broken for a couple of the octants for some reason - right after nucleus?
 				uint_fast64_t idx = libmorton::morton3D_32_encode(pos.x, pos.y, pos.z);
-				idx += idx / 9;
-				if (idx >= valenceCount / 2) { idx += nuclearCount; }
+				idx += (idx < valenceCount / 2 ? 0 : nuclearCount) + (idx / 8);
 				return *buftex->template cpu<VoxelDword>(idx);
 			}
 
 			static constexpr uint_fast32_t dimMax = sprout::pow(2, maxLvl);
-			static constexpr float toMeters = 1.f / dimMax;
+			static constexpr float toMeters = 2.f / dimMax;
 
 		private:
 
@@ -101,7 +94,6 @@ namespace tvx {
 			static constexpr uint_fast64_t leafCount = sprout::pow(8, maxLvl); // FIXME: clang's sprout::pow is off-by-one?
 			static constexpr uint_fast64_t scndCount = sprout::pow(8, maxLvl - 1);
 			static constexpr uint_fast64_t valenceCount = leafCount + scndCount;
-			static constexpr uint_fast64_t trunkCount = (leafCount - 1) / 7;
 			static constexpr uint_fast64_t nuclearCount = (sprout::pow(8, maxLvl - 1) - 1) / 7;
 			static constexpr uint_fast64_t totalCount = (sprout::pow(8, maxLvl + 1) - 1) / 7;
 			
@@ -114,11 +106,12 @@ namespace tvx {
 
 			struct Accumulator {
 				VoxelDword voxel = {};
+				uint_fast64_t parentAccum = 0, firstChild = 0;
 				uint_fast8_t red = 0, green = 0, blue = 0, metal = 0, rough = 0, light = 0, which = 0, count = 0;
 				void add(const VoxelDword &v) {
 					assert(which < 8);
 					if ( ! v.getIsFilled()) {
-						++which;
+						voxel.setChildOff(static_cast<OctCoordCartesian>(which++));
 						return;
 					}
 					++count;
@@ -133,12 +126,15 @@ namespace tvx {
 				void add(VoxelDword &&v) { add(v); }
 				bool isDirty() { return which; }
 				VoxelDword avg() {
-					if ( ! count) { return voxel; }
+					if ( ! count) {
+						voxel.setIsFilled(false);
+						return voxel;
+					}
 					voxel.setRed(red / count);
 					voxel.setGreen(green / count);
 					voxel.setBlue(blue / count);
 					voxel.setNormal(26);
-					voxel.setIsFilled(voxel.getChildMasked(0xFF));
+					voxel.setIsFilled(true);
 					voxel.setIsMetal(metal / count);
 					voxel.setRoughness(rough / count);
 					voxel.setLightness(light / count);
@@ -240,16 +236,17 @@ namespace tvx {
 				return voxel;
 			}
 
-			void fill() {
+			void fillCpu(bool generate) {
 				uint_fast64_t valenceIdx = 0, leafIdx = 0, nuclearStart = valenceCount / 2, accumIdx = 0;
 				int_fast64_t nuclearCrct = 0;
 				for (; valenceIdx < valenceCount + nuclearCount; ++valenceIdx) {
-					if (valenceIdx == nuclearStart) {
+					if (valenceIdx == nuclearStart) { // JUMP THE NUCLEUS once the middle of the leaves is reached
 						nuclearCrct -= nuclearCount;
-						valenceIdx += nuclearCount; // JUMP THE NUCLEUS
+						valenceIdx += nuclearCount;
 					}
 					VoxelDword voxel;
-					if ((valenceIdx + nuclearCrct + 1) % 9) {
+					if ((valenceIdx + nuclearCrct + 1) % 9) { // working on a leaf node
+						if ( ! generate) { continue; }
 						switch(whichScene) {
 							case 0: voxel = getAntisphere(leafIdx++); break;
 							case 1: voxel = getMortonColors(leafIdx++); break;
@@ -259,7 +256,7 @@ namespace tvx {
 							default: break;
 						}
 					}
-					else {
+					else { // working on a level 1 interior node (just above the leaves)
 						nuclearAccumulators[accumIdx].reset();
 						for (int i = -8; i < 0; ++i) {
 							nuclearAccumulators[accumIdx].add(*buftex->template cpu<VoxelDword>(valenceIdx + i));
@@ -275,7 +272,9 @@ namespace tvx {
 					for (uint_fast32_t inLvl = 0; inLvl < lvlLimit; ++inLvl) {
 						nuclearAccumulators[accumIdx].reset();
 						uint_fast64_t nuclearAvgLimit = nuclearAvgHead + 8;
+						nuclearAccumulators[accumIdx].firstChild = nuclearAvgHead;
 						for (; nuclearAvgHead < nuclearAvgLimit; ++nuclearAvgHead) {
+							nuclearAccumulators[nuclearAvgHead].parentAccum = accumIdx;
 							nuclearAccumulators[accumIdx].add(nuclearAccumulators[nuclearAvgHead].get());
 						}
 						buftex->template writeToCpu<VoxelDword>(nuclearStart + nuclearIdx++, nuclearAccumulators[accumIdx++].avg());

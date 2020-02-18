@@ -52,7 +52,7 @@ namespace tvx {
 			}
 			
 		public:
-			static constexpr float playerEyeLevel = 2.f * Voctree<maxLvl>::toMeters;
+			static constexpr float playerEyeLevel = 1.75f * Voctree<maxLvl>::toMeters;
 			bool freeMove = false;
 			
 			explicit Player(

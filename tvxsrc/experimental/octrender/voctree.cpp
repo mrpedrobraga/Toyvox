@@ -23,6 +23,9 @@ namespace tvx {
 	void VoxelDword::setChildOn(OctCoordCartesian which) {
 		data[0] |= (0b1u << static_cast<uint_fast8_t>(which));
 	}
+	void VoxelDword::setChildOff(OctCoordCartesian which) {
+		data[0] &= ~(0b1u << static_cast<uint_fast8_t>(which));
+	}
 	void VoxelDword::setChildren(uint8_t in) {
 		data[0] |= in;
 	}
