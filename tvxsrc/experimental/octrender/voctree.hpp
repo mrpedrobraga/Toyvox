@@ -60,6 +60,7 @@ namespace tvx {
 
 			void generate() { fillCpu(true); }
 			void recalcInterior() { fillCpu(false); }
+			void cascadeChanges(uint_fast64_t accIdx) { nuclearAccumulators[accIdx].cascade(nuclearAccumulators); }
 			void sendToGpu(GLenum texUnit) {
 				buftex->sendToGpu();
 				buftex->use(texUnit);
@@ -104,55 +105,80 @@ namespace tvx {
 			static constexpr uint_fast32_t vox_brick =  3;
 			static constexpr float small = 0.001f;
 
-			struct Accumulator {
-				VoxelDword voxel = {};
-				uint_fast64_t parentAccum = 0, firstChild = 0;
-				uint_fast8_t red = 0, green = 0, blue = 0, metal = 0, rough = 0, light = 0, which = 0, count = 0;
-				void add(const VoxelDword &v) {
-					assert(which < 8);
-					if ( ! v.getIsFilled()) {
-						voxel.setChildOff(static_cast<OctCoordCartesian>(which++));
-						return;
+			class Accumulator {
+				public:
+					
+					// parent should never be 0 and be valid - use 0 to mean uninitialized parent.
+					uint_fast64_t parentAccum = 0, firstChild = 0;
+					void reset(VoxelDword *v, bool isValence = false) {
+						voxel = v;
+						valence = isValence;
+						red = 0;
+						green = 0;
+						blue = 0;
+						metal = 0;
+						rough = 0;
+						light = 0;
+						which = 0;
+						count = 0;
 					}
-					++count;
-					voxel.setChildOn(static_cast<OctCoordCartesian>(which++));
-					red += v.getRed();
-					green += v.getGreen();
-					blue += v.getBlue();
-					metal += v.getIsMetal();
-					rough += v.getRoughness();
-					light += v.getLightness();
-				}
-				void add(VoxelDword &&v) { add(v); }
-				bool isDirty() { return which; }
-				VoxelDword avg() {
-					if ( ! count) {
-						voxel.setIsFilled(false);
-						return voxel;
+					void calculate(std::array<Accumulator, nuclearCount + scndCount> &accumulators) {
+						if (valence) {
+							for (int i = -8; i < 0; ++i) {
+								add(*(voxel + i));
+							}
+						} else {
+							for (int i = 0; i < 8; ++i) {
+								add(*accumulators[firstChild + i].voxel);
+							}
+						}
+						avg();
 					}
-					voxel.setRed(red / count);
-					voxel.setGreen(green / count);
-					voxel.setBlue(blue / count);
-					voxel.setNormal(26);
-					voxel.setIsFilled(true);
-					voxel.setIsMetal(metal / count);
-					voxel.setRoughness(rough / count);
-					voxel.setLightness(light / count);
-					return voxel;
-				}
-				VoxelDword get() {
-					return voxel;
-				}
-				void reset() {
-					red = 0;
-					green = 0;
-					blue = 0;
-					metal = 0;
-					rough = 0;
-					light = 0;
-					which = 0;
-					count = 0;
-				}
+					void cascade(std::array<Accumulator, nuclearCount + scndCount> &accumulators) {
+						reset(voxel, valence);
+						calculate(accumulators);
+						if (parentAccum) {
+							accumulators[parentAccum].cascade(accumulators);
+						}
+					}
+					
+				private:
+					
+					VoxelDword *voxel = nullptr;
+
+					uint_fast8_t red = 0, green = 0, blue = 0, metal = 0, rough = 0, light = 0, which = 0, count = 0;
+					bool valence = false;
+					void add(const VoxelDword &v) {
+						assert(which < 8);
+						if (!v.getIsFilled()) {
+							voxel->setChildOff(static_cast<OctCoordCartesian>(which++));
+							return;
+						}
+						++count;
+						voxel->setChildOn(static_cast<OctCoordCartesian>(which++));
+						red += v.getRed();
+						green += v.getGreen();
+						blue += v.getBlue();
+						metal += v.getIsMetal();
+						rough += v.getRoughness();
+						light += v.getLightness();
+					}
+					void add(VoxelDword &&v) { add(v); }
+					bool isDirty() { return which; }
+					void avg() {
+						if (!count) {
+							voxel->setIsFilled(false);
+							return;
+						}
+						voxel->setRed(red / count);
+						voxel->setGreen(green / count);
+						voxel->setBlue(blue / count);
+						voxel->setNormal(26);
+						voxel->setIsFilled(true);
+						voxel->setIsMetal(metal / count);
+						voxel->setRoughness(rough / count);
+						voxel->setLightness(light / count);
+					}
 			};
 			
 			std::unique_ptr<BufferTexture<totalCount * sizeof(VoxelDword)>> buftex;
@@ -255,30 +281,25 @@ namespace tvx {
 							case 4: voxel = getFlat(leafIdx++); break;
 							default: break;
 						}
+						buftex->template writeToCpu<VoxelDword>(valenceIdx, voxel);
+					} else { // working on a level 1 interior node (just above the leaves)
+						nuclearAccumulators[accumIdx++].reset(buftex->template cpu<VoxelDword>(valenceIdx), true);
 					}
-					else { // working on a level 1 interior node (just above the leaves)
-						nuclearAccumulators[accumIdx].reset();
-						for (int i = -8; i < 0; ++i) {
-							nuclearAccumulators[accumIdx].add(*buftex->template cpu<VoxelDword>(valenceIdx + i));
-						}
-						voxel = nuclearAccumulators[accumIdx++].avg();
-					}
-					buftex->template writeToCpu<VoxelDword>(valenceIdx, voxel);
 				}
-				
 				uint_fast64_t nuclearIdx = 0, nuclearInvLvl = 2, nuclearAvgHead = 0;
 				for (; nuclearInvLvl <= maxLvl; ++nuclearInvLvl) {
 					uint_fast32_t lvlLimit = pow(8, maxLvl - nuclearInvLvl);
 					for (uint_fast32_t inLvl = 0; inLvl < lvlLimit; ++inLvl) {
-						nuclearAccumulators[accumIdx].reset();
-						uint_fast64_t nuclearAvgLimit = nuclearAvgHead + 8;
 						nuclearAccumulators[accumIdx].firstChild = nuclearAvgHead;
+						uint_fast64_t nuclearAvgLimit = nuclearAvgHead + 8;
 						for (; nuclearAvgHead < nuclearAvgLimit; ++nuclearAvgHead) {
 							nuclearAccumulators[nuclearAvgHead].parentAccum = accumIdx;
-							nuclearAccumulators[accumIdx].add(nuclearAccumulators[nuclearAvgHead].get());
 						}
-						buftex->template writeToCpu<VoxelDword>(nuclearStart + nuclearIdx++, nuclearAccumulators[accumIdx++].avg());
+						nuclearAccumulators[accumIdx++].reset(buftex->template cpu<VoxelDword>(nuclearStart + nuclearIdx++));
 					}
+				}
+				for (auto &accumulator : nuclearAccumulators) {
+					accumulator.calculate(nuclearAccumulators);
 				}
 			}
 
