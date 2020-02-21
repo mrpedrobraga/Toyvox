@@ -30,9 +30,9 @@ namespace tvx {
 							glm::vec3 cart = rayFRes.pos + rayFRes.norm;
 							accIdx = libmorton::morton3D_32_encode(cart.x, cart.y, cart.z) / 8;
 							VoxelDword &target = voctree.at(cart);
-							target.setRed(7);
-							target.setGreen(0);
-							target.setBlue(0);
+							target.setRed(rand() % 8);
+							target.setGreen(rand() % 8);
+							target.setBlue(rand() % 8);
 							target.setIsFilled(true);
 						} else if (rClicked) {
 							accIdx = libmorton::morton3D_32_encode(rayFRes.pos.x, rayFRes.pos.y, rayFRes.pos.z) / 8;

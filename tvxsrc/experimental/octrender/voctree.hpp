@@ -79,10 +79,10 @@ namespace tvx {
 				return res;
 			}
 			VoxelDword &at(const glm::uvec3 &pos) {
-				// FIXME: Broken for a couple of the octants for some reason - right after nucleus?
-				uint_fast64_t idx = libmorton::morton3D_32_encode(pos.x, pos.y, pos.z);
-				idx += (idx < valenceCount / 2 ? 0 : nuclearCount) + (idx / 8);
-				return *buftex->template cpu<VoxelDword>(idx);
+				uint_fast64_t morton = libmorton::morton3D_32_encode(pos.x, pos.y, pos.z);
+				uint_fast64_t accumIdx = morton / 8;
+				uint_fast8_t voxIdx = morton % 8;
+				return *(nuclearAccumulators[accumIdx].voxel - 8 + voxIdx);
 			}
 
 			static constexpr uint_fast32_t dimMax = sprout::pow(2, maxLvl);
@@ -110,6 +110,7 @@ namespace tvx {
 					
 					// parent should never be 0 and be valid - use 0 to mean uninitialized parent.
 					uint_fast64_t parentAccum = 0, firstChild = 0;
+					VoxelDword *voxel = nullptr;
 					void reset(VoxelDword *v, bool isValence = false) {
 						voxel = v;
 						valence = isValence;
@@ -143,8 +144,6 @@ namespace tvx {
 					}
 					
 				private:
-					
-					VoxelDword *voxel = nullptr;
 
 					uint_fast8_t red = 0, green = 0, blue = 0, metal = 0, rough = 0, light = 0, which = 0, count = 0;
 					bool valence = false;
