@@ -20,6 +20,7 @@
 #include <map>
 #include <algorithm>
 #include <unordered_map>
+#include <bitset>
 #include <string>
 #include <vector>
 #include <chrono>
@@ -43,6 +44,10 @@ void errorlog(const char* x) {printf(x);}
 /* Available renderers */
 
 using Voxel = uint32_t;
+using SparseData = std::bitset<8>;
+using UserData = std::bitset<10>;
+using Colour = std::bitset<32>;
+using Normal = std::bitset<24>;
 
 #ifdef WIN32
 # define WINDOWS_THREADS //If you're using windows threads

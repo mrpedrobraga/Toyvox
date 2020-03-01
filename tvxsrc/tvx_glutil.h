@@ -15,8 +15,6 @@ namespace tvx {
       return (value - min) / (max - min);
   }
 
-	// TODO: For some reason, compilation errors are not being caught and instead bad shaders crash at runtime
-
 	GLuint program_from_string(const char *vsString, const char *fsString) {
 
     unsigned int vertex, fragment;
@@ -51,7 +49,7 @@ namespace tvx {
 		if(!success)
 		{
 			glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-			std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+			std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n\n\n" << infoLog << std::endl;
 		}
 
 		glDeleteShader(vertex);
@@ -64,20 +62,6 @@ namespace tvx {
 		std::string vertexCode = load_file_as_string(vsFilename);
 		std::string fragmentCode = load_file_as_string(fsFilename);
 
-    /*fragmentCode = "#version 400 core\n"
-    "layout(origin_upper_left) in vec4 gl_FragCoord;\n"
-    "uniform float time;\n"
-    "uniform vec2 resolution;\n"
-    "void main() {\n"
-    "    gl_FragColor = vec4(gl_FragCoord.xy / resolution, 1.0, 1.0);\n"
-    "}\n";
-
-    vertexCode = "#version 400 core\n"
-    "layout(location = 0) in vec4 in_position;\n"
-    "void main() {\n"
-    "    gl_Position = in_position;\n"
-    "}\n";*/
-
 		return program_from_string(vertexCode.c_str(), fragmentCode.c_str());
 	}
 
@@ -89,6 +73,7 @@ namespace tvx {
 		if (program && reloadedProgram) {
 			glDeleteProgram(*program);
 			*program = reloadedProgram;
+      std::cout << "SHADER PROGRAM RELOADED WITH SUCCESS!\n" <<std::endl;
 		} else {
 			SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Shader reload failed!\n");
 		}

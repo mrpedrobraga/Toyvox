@@ -2,6 +2,7 @@
 #include "tvxutil.h"
 #include "tvx_glutil.h"
 #include "objects.h"
+#include "voxels.h"
 
 namespace tvx {
 	class Display
@@ -50,6 +51,7 @@ namespace tvx {
 
 			void init()
 			{
+				test();
 				define_shaders();
 				program = program_from_file(vertex_shader_path, pixel_shader_path);
 
@@ -82,6 +84,34 @@ namespace tvx {
 				glBindVertexArray(0);
 			}
 
+			void sendUniforms()
+			{
+				// time
+				glUniform1f(glGetUniformLocation(program, "time"), wall_clock_time());
+
+				// camera_rotation_matrix
+				glm::vec3 camera_rotation = glm::vec3(0.0, 0.0, 0.0);
+
+				glm::mat4x4 mat_rotation = 	glm::rotate(glm::mat4x4(1), camera_rotation.z, glm::vec3(0,0,1)) *
+																		glm::rotate(glm::mat4x4(1), camera_rotation.y, glm::vec3(0,1,0)) *
+																		glm::rotate(glm::mat4x4(1), camera_rotation.x, glm::vec3(1,0,0));
+
+				glUniformMatrix4fv(glGetUniformLocation(program, "camera_rotation"), 1, GL_FALSE, &mat_rotation[0][0]);
+
+				//The size of the model, in voxels.
+				glUniform1f(glGetUniformLocation(program, "model_size"), 4.);
+
+				//The content of the octree, in dense tree data.
+				glUniform1uiv(glGetUniformLocation(program, "voxels"), 64, (GLuint*) m_voxelBuffer);
+			}
+
+			void test()
+			{
+				for(size_t i = 0; i < 4; i++) for(size_t j = 0; j < 4; j++) for(size_t k = 0; k < 4; k++) {
+					m_voxelBuffer[i + j * 4 + k * 16] = getIntColour(glm::ivec4(i*255/4, j*255/4, k*255/4, 255));
+				}
+			}
+
 	    void update(std::shared_ptr<Scene>& scene)
 	    {
 	        SDL_Event e;
@@ -90,9 +120,9 @@ namespace tvx {
 
 							glUseProgram(program);
 
-							glUniform1f(glGetUniformLocation(program, "time"), wall_clock_time());
+							sendUniforms();
 
-	            switch (e.type)
+							switch (e.type)
 	            {
 								case SDL_QUIT:
 	                m_is_closed = true;
@@ -101,10 +131,8 @@ namespace tvx {
 									switch (e.window.event) {
 										case SDL_WINDOWEVENT_RESIZED:
 											SDL_GetWindowSize(m_window, &m_windowsize.x, &m_windowsize.y);
-											f_windowsize = glm::vec2((float) m_windowsize.x, (float) m_windowsize.y);
 											glViewport(0, 0, m_windowsize.x, m_windowsize.y);
-											glUniform2fv(glGetUniformLocation(program, "resolution"), sizeof(m_windowsize), (float*)(&f_windowsize));
-
+											//glUniform2uiv(glGetUniformLocation(program, "resolution"), sizeof(m_windowsize), (GLuint*)(m_windowsize));
 											break;
 										case SDL_WINDOWEVENT_FOCUS_GAINED:
 											reload_program(&program, vertex_shader_path, pixel_shader_path);
@@ -114,6 +142,8 @@ namespace tvx {
 
 							//if(scene->on_event) scene->on_event(e, *scene);
 	        }
+
+					//Draw everything!
 
 					glBindVertexArray(m_vertexArrayObject);
 					glDrawArrays(GL_TRIANGLE_STRIP, 0, 8);
@@ -135,6 +165,7 @@ namespace tvx {
 					glDeleteBuffers(1, &m_vertexBufferObject);
 					m_vertexBufferObject = 0;
 				}
+				//glBindBuffer(0);
 				glBindVertexArray(0);
 				glUseProgram(0);
         SDL_GL_DeleteContext( m_gl_context );
@@ -157,11 +188,12 @@ namespace tvx {
 	private:
 	    SDL_Window* m_window;
 			glm::ivec2 m_windowsize;
-			glm::vec2 f_windowsize;
 	    SDL_GLContext m_gl_context;
 			GLuint program;
 			GLuint VAO, VBO;
 	    bool m_is_closed;
 			GLuint m_vertexBufferObject, m_vertexArrayObject;
+
+			Voxel m_voxelBuffer[64];
 	};
 }
