@@ -90,7 +90,7 @@ namespace tvx {
 				glUniform1f(glGetUniformLocation(program, "time"), wall_clock_time());
 
 				// camera_rotation_matrix
-				glm::vec3 camera_rotation = glm::vec3(0.0, 0.0, 0.0);
+				glm::vec3 camera_rotation = glm::vec3(0.0, 0.0, 0.785);
 
 				glm::mat4x4 mat_rotation = 	glm::rotate(glm::mat4x4(1), camera_rotation.z, glm::vec3(0,0,1)) *
 																		glm::rotate(glm::mat4x4(1), camera_rotation.y, glm::vec3(0,1,0)) *
@@ -99,16 +99,21 @@ namespace tvx {
 				glUniformMatrix4fv(glGetUniformLocation(program, "camera_rotation"), 1, GL_FALSE, &mat_rotation[0][0]);
 
 				//The size of the model, in voxels.
-				glUniform1f(glGetUniformLocation(program, "model_size"), 4.);
+				glUniform1f(glGetUniformLocation(program, "model_size"), m_modelSize);
 
 				//The content of the octree, in dense tree data.
-				glUniform1uiv(glGetUniformLocation(program, "voxels"), 64, (GLuint*) m_voxelBuffer);
+				glUniform1uiv(glGetUniformLocation(program, "voxels"), sizeof(m_voxelBuffer)/sizeof(Voxel), (GLuint*) m_voxelBuffer);
 			}
 
 			void test()
 			{
-				for(size_t i = 0; i < 4; i++) for(size_t j = 0; j < 4; j++) for(size_t k = 0; k < 4; k++) {
-					m_voxelBuffer[i + j * 4 + k * 16] = getIntColour(glm::ivec4(i*255/4, j*255/4, k*255/4, 255));
+				for(size_t i = 0; i < m_modelSize; i++) for(size_t j = 0; j < m_modelSize; j++) for(size_t k = 0; k < m_modelSize; k++) {
+
+					int a = 0;
+
+					if(glm::distance(glm::vec3(i, j, k), glm::vec3(5, 5, 5)) <= 5.5) a = 255;
+
+					m_voxelBuffer[i + j * m_modelSize + k * m_modelSize * m_modelSize] = getIntColour(glm::ivec4(i*255/m_modelSize, j*255/m_modelSize, k*255/m_modelSize, a));
 				}
 			}
 
@@ -194,6 +199,7 @@ namespace tvx {
 	    bool m_is_closed;
 			GLuint m_vertexBufferObject, m_vertexArrayObject;
 
-			Voxel m_voxelBuffer[64];
+			Voxel m_voxelBuffer[1331];
+			int m_modelSize = 11;
 	};
 }

@@ -1,3 +1,4 @@
+#include "options.h"
 #include "components.h"
 #include "game.h"
 #include "voxel_objects.h"
@@ -14,45 +15,27 @@ To add a system, add it to a scene's tick function, or to a global tick function
 
 using namespace tvx;
 
-//Position 2d
-typedef ComponentSet<glm::vec2> Positions2D;
-
-//Position 2d
-typedef ComponentSet<glm::vec3> Positions3D;
-
 //Transform
-typedef ComponentSet<glm::mat4x4> Transforms;
+using Transform = glm::mat4x4;
+typedef ComponentSet<Transform> Transforms;
 
 //Type Tag (to easily differenciate objects!)
-typedef ComponentSet<std::string> TypeTags;
+typedef ComponentSet<TypeTag> TypeTags;
 
-/*3D movement
-struct Kinematics3D {
-	glm::mat4x4 transform;
-	glm::vec3 velocity;
-	glm::vec3 acceleration;
+//Kinematics (velocity and a lot of "moving objects" util)
+struct c_Kinematics {
+  glm::vec3 velocity;
+  bool active = true;
 };
 
-inline void Kinematics3D_tick(Kinematics3D& k) {
-	k.velocity += acceleration * DELTA_TIME;
-	transform = glm::translate(transform, velocity * DELTA_TIME);
+typedef ComponentSet<c_Kinematics> Kinematics;
+
+//Kinematics tick function. Will update objects that have both a c_Kinematics and a Transform component.
+void tick_Kinematics(EntityUID* picked_entities, size_t picked_count, Transforms t, Kinematics k)
+{
+  for(size_t i = 0; i < picked_count; i++)
+  {
+      EntityUID cE = picked_entities[i];
+      if(k[cE].active) t[cE] *= glm::translate(k[cE].velocity * tvx::game::DELTA_TIME);
+  }
 }
-
-typedef ComponentSet<Kinematics3D> Kinematics3D;
-
-//2D movement
-struct Kinematics2D {
-	glm::mat3x3 transform;
-	glm::vec2 velocity;
-	glm::vec2 acceleration;
-};
-
-inline void Kinematics2D_tick(Kinematics2D& k) {
-	k.velocity += acceleration * DELTA_TIME;
-	transform = glm::translate(transform, velocity * DELTA_TIME);
-}
-
-typedef ComponentSet<Kinematics2D> Kinematics2D;
-
-//Voxel Models!
-typedef ComponentSet<VoxelObject> VoxelObjects;*/

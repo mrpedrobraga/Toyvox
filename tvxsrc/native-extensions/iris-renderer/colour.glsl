@@ -14,7 +14,7 @@ so this is a rotation-only matrix. */
 uniform mat4 camera_rotation;
 
 /* Minimum photon step in raymarching algorithm */
-const float MIN_PHOTON_STEP = 0.001;
+const float MIN_PHOTON_STEP = 0.01;
 
 /* Maximum steps before giving up on rendering. */
 const int MAX_RM_STEPS = 500;
@@ -23,16 +23,16 @@ const int MAX_RM_STEPS = 500;
 const float ALPHA_OPAQUE = 0.99;
 
 //The model to be rendered, passed as an uniform.
-uniform uint voxels[64];
+uniform uint voxels[1331];
 
 //The size of the model, in voxels.
 uniform float model_size;
 
 //The origin (top_northwest of the octree)
-vec3 a = vec3(.3, -.1, -.05);
+vec3 a = vec3(1., -.5, -.5);
 
 //The other point of the diagonal (bottom_southeast of the octree)
-vec3 b = vec3(.1, .1, .1);
+vec3 b = vec3(1, 1, 1);
 
 //Function definitions
 vec3 raymarch (vec2 uv, vec3 camera_scale);
@@ -56,7 +56,7 @@ void main ()
 and intersect with the octree to get the colour of each screen pixel. */
 vec3 raymarch (vec2 uv, vec3 camera_scale)
 {
-  vec3 ray = (camera_rotation * vec4(normalize(vec3(1.0, camera_scale.xy * uv)), 1.0)).xyz;
+  vec3 ray = (vec4(normalize(vec3(1.0, camera_scale.xy * uv)), 1.0)).xyz;
   float dist = 0.;
   vec3 cray = vec3(0.);
 
@@ -65,13 +65,17 @@ vec3 raymarch (vec2 uv, vec3 camera_scale)
     dist += MIN_PHOTON_STEP;
     cray = (dist * ray);
 
+    cray -= a + b/2.;
+    cray = (camera_rotation * vec4(cray, 1.0)).xyz;
+    cray += a + b/2.;
+
     int cv = currentVoxel(cray);
     if (cv == -1) continue;
     vec4 col = getColor(uint(cv));
 
     if (col.a == 0) continue;
 
-    return col;
+    return 1. - col;
   }
 
   return vec3(1.0);
@@ -97,7 +101,15 @@ int currentVoxel(vec3 ray)
 
     vec3 r = ( ray - a ) / b;
 
-    return int(voxels[int(floor(r.x * model_size) + 4.0 * floor(r.y * model_size) + 16.0 * floor(r.z * model_size))]);
+    return int(
+      voxels[
+          int(
+               floor(r.x * model_size) +
+              model_size * floor(r.y * model_size) +
+             model_size * model_size * floor(r.z * model_size)
+            )
+        ]
+      );
 }
 
 /* Extract the 8-bit RGBA colour from an int using bit magic :) */

@@ -1,13 +1,20 @@
 #pragma once
 
+#include "options.h"
 #include "tvxutil.h"
 
 namespace tvx {
-	
+
+	class EventSheet
+	{
+
+	};
+
 	/**
 	 * An associative container linking key presses to descriptive action strings
 	 */
-	class KeyMap {
+	class KeyMap
+	{
 		private:
 			std::multimap<std::string, SDL_Keycode> action_to_key;
 			/*

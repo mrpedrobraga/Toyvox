@@ -20,8 +20,8 @@ namespace tvx::game {
 	Display current_display(game_title, resolution, window_flags);
 
 	Scene &get_current_scene() { return *current_scene; }
-	void set_current_scene(std::shared_ptr<Scene> &new_scene) {
-		current_scene = std::make_shared<Scene>(*new_scene);
+	void set_current_scene(std::shared_ptr<Scene>& new_scene) {
+		current_scene = (new_scene);
 
 		if (current_scene->on_load) {
 			current_scene->on_load(*current_scene);

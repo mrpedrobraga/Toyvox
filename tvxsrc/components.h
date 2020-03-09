@@ -7,44 +7,6 @@
 namespace tvx
 {
 
-	/* Type tags, in case you want to differenciate types of entities. */
-	struct TypeTag
-	{
-	private:
-		char* value;
-	public:
-		char* get_value()
-		{
-			return value;
-		}
-
-		void set_value(const char* new_value)
-		{
-			set_value(strdup(new_value));
-		}
-
-		void set_value(char* new_value)
-		{
-			value = new_value;
-		}
-
-		TypeTag()
-		{
-			value = strdup("");
-		}
-
-		TypeTag(const char* new_value)
-		{
-			value = strdup(new_value);
-		}
-
-		TypeTag(char* new_value)
-		{
-			value = new_value;
-		}
-
-	};
-
 	enum CameraType {
 		TVX_PERSPECTIVE_CAMERA,
 		TVX_ORTOGRAPHIC_CAMERA,
@@ -111,6 +73,11 @@ namespace tvx
 		{
 			auto it = std::find(begin(entities), end(entities), e);
 			return (cset[std::distance(entities, it)]);
+		}
+
+		Type& operator[](EntityUID e)
+		{
+			return of(e);
 		}
 
 		void apply(void (*tick)(Type&))

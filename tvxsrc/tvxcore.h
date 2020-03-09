@@ -10,4 +10,5 @@
 #include "components.h"
 #include "events.h"
 #include "game.h"
+#include "tvx_default_components.h"
 #include "tvxutil.h"
