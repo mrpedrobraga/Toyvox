@@ -127,11 +127,15 @@ namespace tvx {
 
 							sendUniforms();
 
+							if(scene->on_event) scene->on_event(e, *scene);
+
 							switch (e.type)
 	            {
 								case SDL_QUIT:
 	                m_is_closed = true;
 									break;
+								case SDL_KEYDOWN:
+									if(scene->on_key_pressed) scene->on_key_pressed(e, *scene);
 								case SDL_WINDOWEVENT:
 									switch (e.window.event) {
 										case SDL_WINDOWEVENT_RESIZED:
@@ -142,10 +146,11 @@ namespace tvx {
 										case SDL_WINDOWEVENT_FOCUS_GAINED:
 											reload_program(&program, vertex_shader_path, pixel_shader_path);
 											break;
+
 									}
 	            }
 
-							//if(scene->on_event) scene->on_event(e, *scene);
+
 	        }
 
 					//Draw everything!
