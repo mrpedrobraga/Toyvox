@@ -29,7 +29,7 @@ namespace tvx::game {
 	}
 
 	std::string get_title() { return game_title; }
-	void set_title(std::string title) { game_title = std::move(title); }
+	void set_title(std::string title) { game_title = strdup(title.c_str()); }
 
 	void init() {
 		current_display.init();

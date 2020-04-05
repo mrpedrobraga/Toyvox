@@ -23,7 +23,11 @@ const int MAX_RM_STEPS = 500;
 const float ALPHA_OPAQUE = 0.99;
 
 //The model to be rendered, passed as an uniform.
-uniform uint voxels[1331];
+
+const uint WORLD_SIZE = 1331;
+
+  uniform uint voxels[WORLD_SIZE];
+
 
 //The size of the model, in voxels.
 uniform float model_size;

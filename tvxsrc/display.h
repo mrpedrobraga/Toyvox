@@ -82,6 +82,20 @@ namespace tvx {
 				glEnableVertexAttribArray(0);
 
 				glBindVertexArray(0);
+
+				// Set up the voxel Buffer
+				glGenBuffers (1, &m_voxelBufferObject);
+
+				glBindBuffer (GL_TEXTURE_BUFFER, m_voxelBufferObject);
+				glBufferData (GL_TEXTURE_BUFFER, sizeof (m_voxelBuffer), m_voxelBuffer, GL_DYNAMIC_DRAW);
+				glBindBufferBase(GL_TEXTURE_BUFFER, 3, m_voxelBufferObject);
+				glBindBuffer (GL_TEXTURE_BUFFER, 0);
+
+				// Allocate storage for the SSBO
+				/*glBindBuffer (GL_SHADER_STORAGE_BUFFER, m_voxelBufferObject);
+				glBufferData (GL_SHADER_STORAGE_BUFFER, sizeof (m_voxelBuffer), m_voxelBuffer, GL_DYNAMIC_DRAW);
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_voxelBufferObject);
+				glBindBuffer (GL_SHADER_STORAGE_BUFFER, 0);*/
 			}
 
 			void sendUniforms()
@@ -103,6 +117,7 @@ namespace tvx {
 
 				//The content of the octree, in dense tree data.
 				glUniform1uiv(glGetUniformLocation(program, "voxels"), sizeof(m_voxelBuffer)/sizeof(Voxel), (GLuint*) m_voxelBuffer);
+
 			}
 
 			void test()
@@ -198,12 +213,15 @@ namespace tvx {
 	private:
 	    SDL_Window* m_window;
 			glm::ivec2 m_windowsize;
+			std::string m_windowtitle;
 	    SDL_GLContext m_gl_context;
 			GLuint program;
 			GLuint VAO, VBO;
 	    bool m_is_closed;
 			GLuint m_vertexBufferObject, m_vertexArrayObject;
 
+			GLuint m_voxelBufferObject, m_voxelBufferBlockIndex;
+			const int m_voxelBufferSize = 1331;
 			Voxel m_voxelBuffer[1331];
 			int m_modelSize = 11;
 	};
