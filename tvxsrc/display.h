@@ -116,8 +116,8 @@ namespace tvx {
 				glUniform1f(glGetUniformLocation(program, "model_size"), m_modelSize);
 
 				//The content of the octree, in dense tree data.
-				glUniform1uiv(glGetUniformLocation(program, "voxels"), sizeof(m_voxelBuffer)/sizeof(Voxel), (GLuint*) m_voxelBuffer);
-
+				//glUniform1uiv(glGetUniformLocation(program, "voxels"), sizeof(m_voxelBuffer)/sizeof(Voxel), (GLuint*) m_voxelBuffer);
+				glBufferData (GL_TEXTURE_BUFFER, sizeof (m_voxelBuffer), m_voxelBuffer, GL_DYNAMIC_DRAW);
 			}
 
 			void test()
@@ -126,7 +126,7 @@ namespace tvx {
 
 					int a = 0;
 
-					if(glm::distance(glm::vec3(i, j, k), glm::vec3(5, 5, 5)) <= 5.5) a = 255;
+					if(glm::distance(glm::vec3(i, j, k), glm::vec3(5, 5, 5)) >= 5.5) a = 255;
 
 					m_voxelBuffer[i + j * m_modelSize + k * m_modelSize * m_modelSize] = getIntColour(glm::ivec4(i*255/m_modelSize, j*255/m_modelSize, k*255/m_modelSize, a));
 				}
@@ -141,6 +141,8 @@ namespace tvx {
 							glUseProgram(program);
 
 							sendUniforms();
+
+							SDL_Delay(16);
 
 							if(scene->on_event) scene->on_event(e, *scene);
 

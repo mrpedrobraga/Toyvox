@@ -13,11 +13,11 @@ The camera can't be translated nor scaled,
 so this is a rotation-only matrix. */
 uniform mat4 camera_rotation;
 
-/* Minimum photon step in raymarching algorithm */
+/* Minimum photon step and maximum raymarching steps for the raymarching algorithm */
 const float MIN_PHOTON_STEP = 0.01;
+const int MAX_RM_STEPS = 1000;
 
-/* Maximum steps before giving up on rendering. */
-const int MAX_RM_STEPS = 500;
+const float multiplier = 10.;
 
 /* The threshold value to give up penetration on translucid voxels. */
 const float ALPHA_OPAQUE = 0.99;
@@ -26,17 +26,17 @@ const float ALPHA_OPAQUE = 0.99;
 
 const uint WORLD_SIZE = 1331;
 
-  uniform uint voxels[WORLD_SIZE];
-
+  uniform sampler1D voxels;
+  //uniform uint voxels[WORLD_SIZE];
 
 //The size of the model, in voxels.
 uniform float model_size;
 
-//The origin (top_northwest of the octree)
-vec3 a = vec3(1., -.5, -.5);
+/* The top-northwest of the model. */
+vec3 a = vec3(0.5, -.15, -.15);
 
-//The other point of the diagonal (bottom_southeast of the octree)
-vec3 b = vec3(1, 1, 1);
+/* The size of the model */
+vec3 b = vec3(.3, .3, .3);
 
 //Function definitions
 vec3 raymarch (vec2 uv, vec3 camera_scale);
@@ -44,12 +44,39 @@ float ssdf (vec3 p);
 vec3 vecFloor (vec3 inv);
 vec3 ssnormal (vec3 p);
 vec4 getColor (uint color);
-int currentVoxel(vec3 ray);
+vec4 currentColor(vec3 ray);
+
+//#define RAYTRACING
+
+void stepCM (inout vec3 p, in vec3 direction, in float model_size){
+
+    //First determine the cell this point is in.
+    //A pair of vectors (minp and maxp)
+
+    float inv_ms = 1./model_size;
+
+    vec3 minp = floor(p * model_size) * inv_ms;
+    vec3 maxp = minp + inv_ms;
+
+    vec3 dist = vec3(	direction.x > 0. ? maxp.x - p.x : minp.x - p.x,
+                     	direction.y > 0. ? maxp.y - p.y : minp.y - p.y,
+                     	direction.z > 0. ? maxp.z - p.z : minp.z - p.z
+                     );
+
+    if (abs(direction.z / direction.x) > abs(dist.z / dist.x))
+        p += dist.z * vec3(direction.x / direction.z, direction.y / direction.z, 1.);
+    else if (abs(direction.y / direction.x) > abs(dist.y / dist.x))
+        p += dist.y * vec3(direction.x / direction.y, 1., direction.z / direction.y);
+    else
+        p += dist.x * vec3(1., direction.y / direction.x, direction.z / direction.x);
+
+    p += 0.001 * direction;
+}
 
 //The entry point.
 void main ()
 {
-  vec2 uv = gl_FragCoord.xy / vec2(640, 360);
+  vec2 uv = gl_FragCoord.xy / vec2(160, 90);
 
   vec3 col = raymarch(uv - .5, vec3(1.6, 0.9, 1.0));
 
@@ -60,26 +87,27 @@ void main ()
 and intersect with the octree to get the colour of each screen pixel. */
 vec3 raymarch (vec2 uv, vec3 camera_scale)
 {
-  vec3 ray = (vec4(normalize(vec3(1.0, camera_scale.xy * uv)), 1.0)).xyz;
+  vec3 ray = (vec4(normalize(vec3(1.0, camera_scale.xy * uv)),1.0)).xyz;
   float dist = 0.;
-  vec3 cray = vec3(0.);
+  vec3 cray = vec3(0.); vec3 tcray;
 
   for(int steps = 0; steps < MAX_RM_STEPS; steps++)
   {
-    dist += MIN_PHOTON_STEP;
-    cray = (dist * ray);
+    #ifdef RAYTRACING
+        dist += MIN_PHOTON_STEP; cray = dist * ray;
+    #else
+        stepCM(cray, ray, float(model_size) * multiplier); //cray += MIN_PHOTON_STEP * ray;
+    #endif
 
-    cray -= a + b/2.;
-    cray = (camera_rotation * vec4(cray, 1.0)).xyz;
-    cray += a + b/2.;
+    tcray = cray;
+    bool outside = tcray.x < a.x || tcray.y < a.y || tcray.z < a.z || tcray.x > a.x+b.x || tcray.y > a.y+b.y || tcray.z > a.z+b.z;
 
-    int cv = currentVoxel(cray);
-    if (cv == -1) continue;
-    vec4 col = getColor(uint(cv));
+    if (outside) continue;
+    vec4 ccol = currentColor(tcray);
 
-    if (col.a == 0) continue;
+    if (ccol.a == 0) continue;
 
-    return 1. - col;
+    return ccol;
   }
 
   return vec3(1.0);
@@ -97,23 +125,16 @@ float unlerp(float a, float b, float m) {
 
 //Get the voxel on the model given the position of the photon, in vx, in world-space coordinates.
 // (!) @ deprecated
-int currentVoxel(vec3 ray)
-{
-    bool outside = ray.x < a.x || ray.y < a.y || ray.z < a.z || ray.x > a.x+b.x || ray.y > a.y+b.y || ray.z > a.z+b.z;
+/* Get the current color of a color cube and completely ignores the model. */
+vec4 currentColor (vec3 ray) {
 
-    if(outside) return -1;
+    //vec3 r = ray;
+    vec3 r = ( ray - (a + 0.1 * sin(time)) ) / b;
 
-    vec3 r = ( ray - a ) / b;
-
-    return int(
-      voxels[
-          int(
-               floor(r.x * model_size) +
-              model_size * floor(r.y * model_size) +
-             model_size * model_size * floor(r.z * model_size)
-            )
-        ]
-      );
+    return texture(voxels, (
+        				floor(r.x * model_size) + (model_size) * floor(r.y * model_size) + (model_size * model_size) * floor(r.z * model_size)
+    				 )
+                 );
 }
 
 /* Extract the 8-bit RGBA colour from an int using bit magic :) */

@@ -16,7 +16,7 @@ namespace tvx::game {
 	SDL_Window* window;
 	SDL_GLContext glcontext;
 	GLuint window_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
-	glm::ivec2 resolution = glm::ivec2(640, 360);
+	glm::ivec2 resolution = glm::ivec2(160, 90);
 	Display current_display(game_title, resolution, window_flags);
 
 	Scene &get_current_scene() { return *current_scene; }
