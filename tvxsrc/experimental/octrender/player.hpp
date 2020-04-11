@@ -27,10 +27,10 @@ namespace tvx {
 			void move(Movement which) {
 				switch(which) {
 					case Movement::UP: {
-						if (freeMove) { flyFree(pos, dt * speed * 8, static_cast<float>(pitch - M_PI_2), static_cast<float>(yaw)); }
+						if (freeMove) { flyFree(pos, dt * speed * 8, static_cast<float>(pitch - halfPi), static_cast<float>(yaw)); }
 					} break;
 					case Movement::DOWN: {
-						if (freeMove) { flyFree(pos, dt * speed * 8, static_cast<float>(pitch + M_PI_2), static_cast<float>(yaw)); }
+						if (freeMove) { flyFree(pos, dt * speed * 8, static_cast<float>(pitch + halfPi), static_cast<float>(yaw)); }
 					} break;
 					case Movement::FORWARD: {
 						if (freeMove) { flyFree(pos, dt * speed * 8, static_cast<float>(pitch), static_cast<float>(yaw)); }
@@ -41,12 +41,12 @@ namespace tvx {
 						else { walkFlat(walk, 1, M_PI, static_cast<float>(yaw)); }
 					} break;
 					case Movement::LEFT: {
-						if (freeMove) { flyFree(pos, dt * speed * 8, 0.f, static_cast<float>(yaw - M_PI_2)); }
-						else { walkFlat(walk, 1, 0, static_cast<float>(yaw - M_PI_2)); }
+						if (freeMove) { flyFree(pos, dt * speed * 8, 0.f, static_cast<float>(yaw - halfPi)); }
+						else { walkFlat(walk, 1, 0, static_cast<float>(yaw - halfPi)); }
 					} break;
 					case Movement::RIGHT: {
-						if (freeMove) { flyFree(pos, dt * speed * 8, 0.f, static_cast<float>(yaw + M_PI_2)); }
-						else { walkFlat(walk, 1, 0, static_cast<float>(yaw + M_PI_2)); }
+						if (freeMove) { flyFree(pos, dt * speed * 8, 0.f, static_cast<float>(yaw + halfPi)); }
+						else { walkFlat(walk, 1, 0, static_cast<float>(yaw + halfPi)); }
 					} break;
 				}
 			}
@@ -72,8 +72,8 @@ namespace tvx {
 				   pitch += e->motion.yrel * dt * sensitivity;
 				   if (yaw > M_PI * 2.0) { yaw -= M_PI * 2.0; }
 				   if (yaw < 0.0) { yaw += M_PI * 2.0; }
-				   if (pitch > M_PI_2) { pitch = M_PI_2; }
-				   if (pitch < -M_PI_2) { pitch = -M_PI_2; }
+				   if (pitch > halfPi) { pitch = halfPi; }
+				   if (pitch < -halfPi) { pitch = -halfPi; }
 				   rot.x = yaw;
 				   rot.y = -pitch;
 			   }),

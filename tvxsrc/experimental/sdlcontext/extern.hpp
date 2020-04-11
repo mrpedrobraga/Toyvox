@@ -32,6 +32,16 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-// #include <glm/gtx/vec_swizzle.hpp>
 
-#include "sprout/math/pow.hpp"
+// Useful constants
+constexpr double halfPi = M_PI / 2;
+
+// Compile time power function from https://stackoverflow.com/a/27271374
+template<typename T>
+constexpr T sqr(T a) {
+	return a * a;
+}
+template<typename T>
+constexpr T power(T a, std::size_t n) {
+	return n == 0 ? 1 : sqr(power(a, n / 2)) * (n % 2 == 0 ?  1 : a);
+}

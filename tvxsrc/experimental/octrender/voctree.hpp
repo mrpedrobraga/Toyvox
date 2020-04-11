@@ -85,18 +85,18 @@ namespace tvx {
 				return *(nuclearAccumulators[accumIdx].voxel - 8 + voxIdx);
 			}
 
-			static constexpr uint_fast32_t dimMax = sprout::pow(2, maxLvl);
+			static constexpr uint_fast32_t dimMax = power(2, maxLvl);
 			static constexpr float toMeters = 2.f / dimMax;
 
 		private:
 
 			static constexpr int whichScene = 4;
 			
-			static constexpr uint_fast64_t leafCount = sprout::pow(8, maxLvl); // FIXME: clang's sprout::pow is off-by-one?
-			static constexpr uint_fast64_t scndCount = sprout::pow(8, maxLvl - 1);
+			static constexpr uint_fast64_t leafCount = power(8, maxLvl); // FIXME: clang's sprout::pow is off-by-one?
+			static constexpr uint_fast64_t scndCount = power(8, maxLvl - 1);
 			static constexpr uint_fast64_t valenceCount = leafCount + scndCount;
-			static constexpr uint_fast64_t nuclearCount = (sprout::pow(8, maxLvl - 1) - 1) / 7;
-			static constexpr uint_fast64_t totalCount = (sprout::pow(8, maxLvl + 1) - 1) / 7;
+			static constexpr uint_fast64_t nuclearCount = (power(8, maxLvl - 1) - 1) / 7;
+			static constexpr uint_fast64_t totalCount = (power(8, maxLvl + 1) - 1) / 7;
 			
 			static constexpr uint_fast32_t steps =  100;
 			static constexpr uint_fast32_t vox_nil =  0;
@@ -192,8 +192,8 @@ namespace tvx {
 				if (isFilled) {
 					float cycler = 0.0043f * morton;
 					voxel.setRed((7.f / 2.f) * (1 + sinf(cycler)));
-					voxel.setGreen((7.f / 2.f) * (1 + sinf(cycler + M_PIf32 * (2.f / 3.f))));
-					voxel.setBlue((7.f / 2.f) * (1 + sinf(cycler + M_PIf32 * (4.f / 3.f))));
+					voxel.setGreen((7.f / 2.f) * (1 + sinf(cycler + (float)M_PI * (2.f / 3.f))));
+					voxel.setBlue((7.f / 2.f) * (1 + sinf(cycler + (float)M_PI * (4.f / 3.f))));
 					voxel.setRoughness(15);
 					voxel.setLightness(0);
 				}
@@ -319,7 +319,7 @@ namespace tvx {
 						linearIdx *= 9;
 					} break;
 					default: {
-						lvlOffset += (leafCount + scndCount) / 2 + glm::max(0lu, sumOfPowers(maxLvl - 1) - sumOfPowers(lvl + 1));
+						lvlOffset += (leafCount + scndCount) / 2 + glm::max(0u, sumOfPowers(maxLvl - 1) - sumOfPowers(lvl + 1));
 					}
 				}
 				voxel = buftex->template cpu<VoxelDword>(static_cast<uint_fast64_t>(linearIdx + lvlOffset));

@@ -21,7 +21,7 @@ namespace tvx {
 		if (severity == GL_DEBUG_SEVERITY_HIGH_ARB) {
 			SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "%s\n", message);
 		} else {
-			SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "%s\n", message);
+			SDL_Log("%s\n", message);
 		}
 	}
 	static void setupOpenglDebugCallback() {
@@ -58,8 +58,6 @@ namespace tvx {
 				  errSub("err", [](void *data) -> void { fprintf(stderr, "%s\n", (char *) data); }) {
 
 		SDL_LogSetOutputFunction(SDL_LogOutput, nullptr);
-		SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO);
-
 
 		SDL_SetHint(SDL_HINT_FRAMEBUFFER_ACCELERATION, "1");
 		if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
@@ -110,9 +108,7 @@ namespace tvx {
 		setupOpenglDebugCallback();
 
 		// Use v-sync
-		if (-1 == SDL_GL_SetSwapInterval(1)) {
-			SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "Unable to set vertical sync to desired mode.\n");
-		}
+		if (-1 == SDL_GL_SetSwapInterval(1)) { SDL_Log("Unable to set vertical sync to desired mode.\n"); }
 
 		// Depth test and face culling not needed for full-screen triangle rendering
 		glDisable(GL_DEPTH_TEST);

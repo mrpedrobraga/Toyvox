@@ -1,4 +1,6 @@
 #version 420 core
+// Hopefully this line doesn't screw up non-NVidia cards - it was necessary for my NVidia Card for some reason
+#extension GL_NV_shadow_samplers_cube : enable
 
 const uint mortonX[256] = {
 0x000000, 0x000001, 0x000008, 0x000009, 0x000040, 0x000041, 0x000048, 0x000049, 0x000200, 0x000201, 0x000208, 0x000209,
@@ -248,7 +250,7 @@ void main() {
 	uint voxel = 0;
 	vec3 hit = rayMarch(camPosIn.xyz, rayDir, dist, stepsTaken, voxel, hitclass);
 	if (vdGetIsFilled(voxel)) { fsOut.xyz = vec3(vdGetRed(voxel), vdGetGreen(voxel), vdGetBlue(voxel)); }
-	else { fsOut.xyz = textureCube(skytex, rayDir).rgb; }
+	else { fsOut.xyz = textureCube(skytex, rayDir).rgb; } // textureCube requires extension GL_NV_shadow_samplers_cube
 //	else { fsOut.xyz = textureLod(skytex, rayDir, 3).rgb; }
 	
 	fsOut *= fsOut;
