@@ -7,6 +7,7 @@ uniform float time;
 uniform ivec2 resolution;
 
 layout(origin_upper_left) in vec4 gl_FragCoord;
+layout(location = 0) out vec4 finalColor;
 
 /* Camera rotation matrix.
 The camera can't be translated nor scaled,
@@ -80,7 +81,7 @@ void main ()
 
   vec3 col = raymarch(uv - .5, vec3(1.6, 0.9, 1.0));
 
-  gl_FragColor = vec4(col, 1.0);
+  finalColor = vec4(col, 1.0);
 }
 
 /* Where all raymarching magic happens. Use the octree to accelerate a pyramid of photons generated here,
@@ -107,7 +108,7 @@ vec3 raymarch (vec2 uv, vec3 camera_scale)
 
     if (ccol.a == 0) continue;
 
-    return ccol;
+    return ccol.xyz;
   }
 
   return vec3(1.0);
@@ -141,5 +142,5 @@ vec4 currentColor (vec3 ray) {
 vec4 getColor(uint color)
 {
   //return vec4(0.0, 0.7, 0.5, 1.0);
-  return vec4((color & 0x000000FF) >> 0, (color & 0x0000FF00) >> 8, (color & 0x00FF0000) >> 16, (color & 0xFF000000)>> 24) / 255.0;
+  return vec4((color & 0x000000FFu) >> 0, (color & 0x0000FF00u) >> 8, (color & 0x00FF0000u) >> 16, (color & 0xFF000000u)>> 24) / 255.0;
 }
