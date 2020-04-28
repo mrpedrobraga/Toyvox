@@ -23,12 +23,9 @@ const float multiplier = 10.;
 /* The threshold value to give up penetration on translucid voxels. */
 const float ALPHA_OPAQUE = 0.99;
 
-//The model to be rendered, passed as an uniform.
-
-const uint WORLD_SIZE = 1331;
-
+//The model to be rendered, passed a group of uniforms and a texture.
+  const uint WORLD_SIZE = 1331;
   uniform sampler1D voxels;
-  //uniform uint voxels[WORLD_SIZE];
 
 //The size of the model, in voxels.
 uniform float model_size;
@@ -132,10 +129,9 @@ vec4 currentColor (vec3 ray) {
     //vec3 r = ray;
     vec3 r = ( ray - (a + 0.1 * sin(time)) ) / b;
 
-    return texture(voxels, (
-        				floor(r.x * model_size) + (model_size) * floor(r.y * model_size) + (model_size * model_size) * floor(r.z * model_size)
-    				 )
-                 );
+    float index = float(floor(r.x * model_size) + (model_size) * floor(r.y * model_size) + (model_size * model_size) * floor(r.z * model_size));
+
+    return texture(voxels, index);
 }
 
 /* Extract the 8-bit RGBA colour from an int using bit magic :) */

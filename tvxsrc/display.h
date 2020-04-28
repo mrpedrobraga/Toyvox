@@ -3,6 +3,7 @@
 #include "tvx_glutil.h"
 #include "objects.h"
 #include "voxels.h"
+#include "textures.h"
 
 namespace tvx {
 	class Display
@@ -53,6 +54,7 @@ namespace tvx {
 			{
 				test();
 				define_shaders();
+				m_voxelBuffer.init();
 				program = program_from_file(vertex_shader_path, pixel_shader_path);
 
 				float quad[] =
@@ -84,18 +86,7 @@ namespace tvx {
 				glBindVertexArray(0);
 
 				// Set up the voxel Buffer
-				glGenBuffers (1, &m_voxelBufferObject);
-
-				glBindBuffer (GL_TEXTURE_BUFFER, m_voxelBufferObject);
-				glBufferData (GL_TEXTURE_BUFFER, sizeof (m_voxelBuffer), m_voxelBuffer, GL_DYNAMIC_DRAW);
-				glBindBufferBase(GL_TEXTURE_BUFFER, 3, m_voxelBufferObject);
-				glBindBuffer (GL_TEXTURE_BUFFER, 0);
-
-				// Allocate storage for the SSBO
-				/*glBindBuffer (GL_SHADER_STORAGE_BUFFER, m_voxelBufferObject);
-				glBufferData (GL_SHADER_STORAGE_BUFFER, sizeof (m_voxelBuffer), m_voxelBuffer, GL_DYNAMIC_DRAW);
-				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_voxelBufferObject);
-				glBindBuffer (GL_SHADER_STORAGE_BUFFER, 0);*/
+				m_voxelBuffer.use(0);
 			}
 
 			void sendUniforms()
@@ -117,7 +108,8 @@ namespace tvx {
 
 				//The content of the octree, in dense tree data.
 				//glUniform1uiv(glGetUniformLocation(program, "voxels"), sizeof(m_voxelBuffer)/sizeof(Voxel), (GLuint*) m_voxelBuffer);
-				glBufferData (GL_TEXTURE_BUFFER, sizeof (m_voxelBuffer), m_voxelBuffer, GL_DYNAMIC_DRAW);
+
+				//m_voxelBuffer.sendToGpu();
 			}
 
 			void test()
@@ -128,7 +120,9 @@ namespace tvx {
 
 					if(glm::distance(glm::vec3(i, j, k), glm::vec3(5, 5, 5)) >= 5.5) a = 255;
 
-					m_voxelBuffer[i + j * m_modelSize + k * m_modelSize * m_modelSize] = getIntColour(glm::ivec4(i*255/m_modelSize, j*255/m_modelSize, k*255/m_modelSize, a));
+					const int index = i + j * m_modelSize + k * m_modelSize * m_modelSize;
+
+					m_voxelBuffer.writeToCpu<glm::uint32_t>(index, getIntColour(glm::ivec4(i*255/m_modelSize, j*255/m_modelSize, k*255/m_modelSize, a)));
 				}
 			}
 
@@ -222,9 +216,7 @@ namespace tvx {
 	    bool m_is_closed;
 			GLuint m_vertexBufferObject, m_vertexArrayObject;
 
-			GLuint m_voxelBufferObject, m_voxelBufferBlockIndex;
-			const int m_voxelBufferSize = 1331;
-			Voxel m_voxelBuffer[1331];
+			BufferTexture<1331> m_voxelBuffer;
 			int m_modelSize = 11;
 	};
 }
