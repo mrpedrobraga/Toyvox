@@ -319,7 +319,7 @@ namespace tvx {
 						linearIdx *= 9;
 					} break;
 					default: {
-						lvlOffset += (leafCount + scndCount) / 2 + glm::max(0u, sumOfPowers(maxLvl - 1) - sumOfPowers(lvl + 1));
+						lvlOffset += (leafCount + scndCount) / 2 + glm::max(0lu, sumOfPowers(maxLvl - 1) - sumOfPowers(lvl + 1));
 					}
 				}
 				voxel = buftex->template cpu<VoxelDword>(static_cast<uint_fast64_t>(linearIdx + lvlOffset));
